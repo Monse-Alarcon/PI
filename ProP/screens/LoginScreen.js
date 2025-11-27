@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 
-export default function LoginScreen({ navigation, onBack }) {
+export default function LoginScreen({ navigation, onBack, onCreateAccount }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +41,11 @@ export default function LoginScreen({ navigation, onBack }) {
   };
 
   const handleCreateAccount = () => {
-    navigation?.navigate('Register'); // Asume que existe una pantalla de registro
+    if (onCreateAccount) {
+      onCreateAccount();
+    } else {
+      navigation?.navigate('Register');
+    }
   };
 
   const handleBack = () => {

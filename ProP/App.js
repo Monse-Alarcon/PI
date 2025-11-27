@@ -1,15 +1,25 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import LoginScreen from './screens/LoginScreen';
+import CuentaNuevaScreen from './screens/CuentaNuevaScreen';
 import { useState } from 'react';
 
 export default function App() {
-  const [showLogin, setShowLogin] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState('home'); // 'home', 'login', 'signup'
 
-  if (showLogin) {
+  if (currentScreen === 'login') {
     return (
       <LoginScreen
-        onBack={() => setShowLogin(false)}
+        onBack={() => setCurrentScreen('home')}
+        onCreateAccount={() => setCurrentScreen('signup')}
+      />
+    );
+  }
+
+  if (currentScreen === 'signup') {
+    return (
+      <CuentaNuevaScreen
+        onBack={() => setCurrentScreen('login')}
       />
     );
   }
@@ -19,7 +29,7 @@ export default function App() {
       <Text style={styles.title}>Bienvenido a Aula Cardinal</Text>
       <TouchableOpacity
         style={styles.button}
-        onPress={() => setShowLogin(true)}
+        onPress={() => setCurrentScreen('login')}
         activeOpacity={0.7}
       >
         <Text style={styles.buttonText}>Ir a Login</Text>
