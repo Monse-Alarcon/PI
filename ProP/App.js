@@ -2,16 +2,31 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import LoginScreen from './screens/LoginScreen';
 import CuentaNuevaScreen from './screens/CuentaNuevaScreen';
-import { useState } from 'react';
+import HomeScreen from './screens/HomeScreen';
+import { useEffect, useState } from 'react';
+import { initDB, seedInitialUser } from './utils/database';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState('home'); // 'home', 'login', 'signup'
+  const [currentScreen, setCurrentScreen] = useState('welcome'); // 'welcome', 'login', 'signup', 'home'
+
+  useEffect(() => {
+    // initialize DB and seed a known user
+    (async () => {
+      try {
+        await initDB();
+        await seedInitialUser();
+      } catch (err) {
+        console.log('DB init error', err);
+      }
+    })();
+  }, []);
 
   if (currentScreen === 'login') {
     return (
       <LoginScreen
-        onBack={() => setCurrentScreen('home')}
+        onBack={() => setCurrentScreen('welcome')}
         onCreateAccount={() => setCurrentScreen('signup')}
+        onLoginSuccess={() => setCurrentScreen('home')}
       />
     );
   }
@@ -23,20 +38,26 @@ export default function App() {
       />
     );
   }
+  if (currentScreen === 'welcome') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Bienvenido a Aula Cardinal</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => setCurrentScreen('login')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.buttonText}>Ir a Login</Text>
+        </TouchableOpacity>
+        <StatusBar style="auto" />
+      </View>
+    );
+  }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Bienvenido a Aula Cardinal</Text>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => setCurrentScreen('login')}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.buttonText}>Ir a Login</Text>
-      </TouchableOpacity>
-      <StatusBar style="auto" />
-    </View>
-  );
+  // authenticated home screen
+  if (currentScreen === 'home') {
+    return <HomeScreen />;
+  }
 }
 
 const styles = StyleSheet.create({

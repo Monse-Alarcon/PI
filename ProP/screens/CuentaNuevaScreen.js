@@ -12,6 +12,8 @@ import {
   Platform,
 } from 'react-native';
 
+import { insertUser, getUserByEmail } from '../utils/database';
+
 export default function CuentaNuevaScreen({ onBack }) {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
@@ -40,8 +42,34 @@ export default function CuentaNuevaScreen({ onBack }) {
       return;
     }
 
-    Alert.alert('Éxito', `Cuenta creada para ${nombre} como ${userType}`);
-    // Aquí iría la lógica de registro real
+    // Verificar si ya existe
+    getUserByEmail(email)
+      .then(existing => {
+        if (existing) {
+          Alert.alert('Error', 'Ya existe un usuario con ese correo');
+          return;
+        }
+
+        insertUser({
+          name: nombre,
+          email,
+          phone: telefono,
+          password: contraseña,
+          userType,
+        })
+          .then(() => {
+            Alert.alert('Éxito', `Cuenta creada para ${nombre} como ${userType}`);
+            if (onBack) onBack();
+          })
+          .catch(err => {
+            console.log('insert err', err);
+            Alert.alert('Error', 'No se pudo crear la cuenta');
+          });
+      })
+      .catch(err => {
+        console.log('check user err', err);
+        Alert.alert('Error', 'Ocurrió un error');
+      });
   };
 
   return (

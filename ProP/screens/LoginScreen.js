@@ -12,7 +12,9 @@ import {
   Platform,
 } from 'react-native';
 
-export default function LoginScreen({ navigation, onBack, onCreateAccount }) {
+import { getUserByEmail } from '../utils/database';
+
+export default function LoginScreen({ navigation, onBack, onCreateAccount, onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -27,9 +29,38 @@ export default function LoginScreen({ navigation, onBack, onCreateAccount }) {
       Alert.alert('Error', 'Por favor ingresa un correo válido');
       return;
     }
+    console.log('=== LOGIN ATTEMPT ===');
+    console.log('Email:', email);
+    console.log('Password:', password);
+    console.log('onLoginSuccess callback:', typeof onLoginSuccess);
+    
+    // Buscar usuario en la base de datos
+    getUserByEmail(email)
+      .then(user => {
+        console.log('User found:', user);
+        if (!user) {
+          Alert.alert('Error', 'Usuario no encontrado');
+          return;
+        }
 
-    Alert.alert('Éxito', `Iniciando sesión con: ${email}`);
-    // Aquí iría la lógica de autenticación real
+        if (user.password !== password) {
+          Alert.alert('Error', 'Contraseña incorrecta');
+          return;
+        }
+
+        console.log('Login success, calling onLoginSuccess');
+        // Éxito: navegar a Home
+        if (onLoginSuccess) {
+          console.log('Calling onLoginSuccess callback');
+          onLoginSuccess();
+        } else {
+          console.warn('onLoginSuccess callback is not defined!');
+        }
+      })
+      .catch(err => {
+        console.error('Login error:', err);
+        Alert.alert('Error', 'Ocurrió un error al iniciar sesión');
+      });
   };
 
   const handleForgotPassword = () => {
