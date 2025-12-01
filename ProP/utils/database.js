@@ -69,6 +69,15 @@ function _webGetUserByEmail(email) {
   });
 }
 
+function _webGetUserById(id) {
+  return new Promise(resolve => {
+    const raw = storage.getItem('users') || '[]';
+    const arr = JSON.parse(raw);
+    const u = arr.find(x => x.id === Number(id)) || null;
+    resolve(u);
+  });
+}
+
 function _webInsertUser({ name, email, phone, password, userType }) {
   return new Promise((resolve, reject) => {
     try {
@@ -142,6 +151,32 @@ export function getUserByEmail(email) {
   }
 
   return _webGetUserByEmail(email);
+}
+
+export function getUserById(id) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'SELECT * FROM users WHERE id = ?;',
+          [id],
+          (_, result) => {
+            if (result.rows.length > 0) {
+              resolve(result.rows.item(0));
+            } else {
+              resolve(null);
+            }
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  return _webGetUserById(id);
 }
 
 export function insertUser({ name, email, phone, password, userType }) {

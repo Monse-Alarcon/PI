@@ -1,13 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from './screens/LoginScreen';
 import CuentaNuevaScreen from './screens/CuentaNuevaScreen';
 import HomeScreen from './screens/HomeScreen';
+import PerfilScreen from './screens/PerfilScreen';
 import { useEffect, useState } from 'react';
-import { initDB, seedInitialUser } from './utils/database';
+import { initDB, seedInitialUser, getUserByEmail } from './utils/database';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome'); // 'welcome', 'login', 'signup', 'home'
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     // initialize DB and seed a known user
@@ -15,6 +18,19 @@ export default function App() {
       try {
         await initDB();
         await seedInitialUser();
+        // check persisted session
+        try {
+          const stored = await AsyncStorage.getItem('currentUserId');
+          if (stored) {
+            const id = parseInt(stored, 10);
+            // verify user exists
+            // getUserByEmail not useful for id; query by email not available here, but we trust id
+            setCurrentUserId(id);
+            setCurrentScreen('home');
+          }
+        } catch (e) {
+          console.log('session check error', e);
+        }
       } catch (err) {
         console.log('DB init error', err);
       }
@@ -26,7 +42,10 @@ export default function App() {
       <LoginScreen
         onBack={() => setCurrentScreen('welcome')}
         onCreateAccount={() => setCurrentScreen('signup')}
-        onLoginSuccess={() => setCurrentScreen('home')}
+        onLoginSuccess={id => {
+          setCurrentUserId(id);
+          setCurrentScreen('home');
+        }}
       />
     );
   }
@@ -54,9 +73,29 @@ export default function App() {
     );
   }
 
-  // authenticated home screen
+  // authenticated home screen (navegación simple por estado)
   if (currentScreen === 'home') {
-    return <HomeScreen />;
+    return (
+      <HomeScreen
+        navigation={{
+          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+        }}
+        currentUserId={currentUserId}
+      />
+    );
+  }
+
+  // perfil screen
+  if (currentScreen === 'perfil') {
+    return (
+      <PerfilScreen
+        navigation={{
+          goBack: () => setCurrentScreen('home'),
+          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+        }}
+        route={{ params: { usuarioId: currentUserId || 1 } }}
+      />
+    );
   }
 }
 

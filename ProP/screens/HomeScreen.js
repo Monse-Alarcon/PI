@@ -15,7 +15,7 @@ import {
 
 const { width } = Dimensions.get('window');
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const [searchText, setSearchText] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnimation] = useState(new Animated.Value(-width * 0.7));
@@ -133,6 +133,16 @@ export default function HomeScreen() {
 
           <TouchableOpacity style={styles.menuItem} onPress={() => setMenuOpen(false)}>
             <Text style={styles.menuItemText}>Tutores</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('Perfil');
+            }}
+          >
+            <Text style={styles.menuItemText}>Perfil</Text>
           </TouchableOpacity>
 
           <View style={styles.menuBottom}>

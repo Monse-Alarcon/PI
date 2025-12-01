@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { getUserByEmail } from '../utils/database';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen({ navigation, onBack, onCreateAccount, onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -36,7 +37,7 @@ export default function LoginScreen({ navigation, onBack, onCreateAccount, onLog
     
     // Buscar usuario en la base de datos
     getUserByEmail(email)
-      .then(user => {
+      .then(async user => {
         console.log('User found:', user);
         if (!user) {
           Alert.alert('Error', 'Usuario no encontrado');
@@ -48,13 +49,18 @@ export default function LoginScreen({ navigation, onBack, onCreateAccount, onLog
           return;
         }
 
-        console.log('Login success, calling onLoginSuccess');
-        // Éxito: navegar a Home
+        try {
+          // Persistir sesión (id)
+          await AsyncStorage.setItem('currentUserId', String(user.id));
+        } catch (e) {
+          console.warn('Could not persist session', e);
+        }
+
+        console.log('Login success, calling onLoginSuccess with id', user.id);
         if (onLoginSuccess) {
-          console.log('Calling onLoginSuccess callback');
-          onLoginSuccess();
-        } else {
-          console.warn('onLoginSuccess callback is not defined!');
+          onLoginSuccess(user.id);
+        } else if (navigation?.navigate) {
+          navigation.navigate('Home');
         }
       })
       .catch(err => {
