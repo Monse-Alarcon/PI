@@ -7,9 +7,11 @@ import HomeScreen from './screens/HomeScreen';
 import PerfilScreen from './screens/PerfilScreen';
 import EditarPerfilScreen from './screens/EditarPerfilScreen';
 import { useEffect, useState } from 'react';
-import { initDB, seedInitialUser, getUserByEmail, initSesionesTable, initMaestroMateriasTable, seedMaestrosAndMaterias } from './utils/database';
+import { initDB, seedInitialUser, getUserByEmail, initSesionesTable, initMaestroMateriasTable, seedMaestrosAndMaterias, initCalificacionesTable, seedCalificaciones, seedAlumnos } from './utils/database';
 import AgendarSesionScreen from './screens/AgendarSesionScreen';
 import MiAgendaScreen from './screens/MiAgendaScreen';
+import TutoresScreen from './screens/TutoresScreen';
+import CalificarScreen from './screens/CalificarScreen';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome'); // 'welcome', 'login', 'signup', 'home'
@@ -24,8 +26,11 @@ export default function App() {
         await initDB();
         await initSesionesTable();
         await initMaestroMateriasTable();
+        await initCalificacionesTable();
         await seedInitialUser();
+        await seedAlumnos();
         await seedMaestrosAndMaterias();
+        await seedCalificaciones();
         // check persisted session
         try {
           const stored = await AsyncStorage.getItem('currentUserId');
@@ -186,6 +191,60 @@ export default function App() {
           },
         }}
         route={{ params: { usuarioId: params.usuarioId || currentUserId || 1 } }}
+      />
+    );
+  }
+
+  // tutores
+  if (currentScreen === 'tutores') {
+    const params = screenParams['tutores'] || {};
+    return (
+      <TutoresScreen
+        navigation={{
+          goBack: () => {
+            setScreenParams({});
+            setCurrentScreen('home');
+          },
+          navigate: (name, navParams) => {
+            const screenName = String(name).toLowerCase();
+            if (navParams) {
+              setScreenParams({ [screenName]: navParams });
+            }
+            setCurrentScreen(screenName);
+          },
+        }}
+        route={{ params: { usuarioId: params.usuarioId || currentUserId || 1 } }}
+      />
+    );
+  }
+
+  // calificar
+  if (currentScreen === 'calificar') {
+    const params = screenParams['calificar'] || {};
+    const previousScreen = params.previousScreen || 'tutores';
+    
+    return (
+      <CalificarScreen
+        navigation={{
+          goBack: () => {
+            setScreenParams({});
+            setCurrentScreen(previousScreen);
+          },
+          navigate: (name, navParams) => {
+            const screenName = String(name).toLowerCase();
+            if (navParams) {
+              setScreenParams({ [screenName]: navParams });
+            }
+            setCurrentScreen(screenName);
+          },
+        }}
+        route={{ 
+          params: { 
+            usuarioId: params.usuarioId || currentUserId || 1,
+            personaId: params.personaId,
+            esTutor: params.esTutor,
+          } 
+        }}
       />
     );
   }

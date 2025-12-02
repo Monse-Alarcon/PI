@@ -478,7 +478,7 @@ export default function AgendarSesionScreen({ navigation, route }) {
             style={styles.menuItem}
             onPress={() => {
               setMenuOpen(false);
-              navigation.navigate('Home');
+              navigation.navigate('Tutores', { usuarioId: currentUserId });
             }}
           >
             <Text style={styles.menuItemText}>Tutores</Text>
