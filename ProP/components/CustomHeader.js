@@ -7,6 +7,7 @@ import {
   Image,
   Dimensions,
   Animated,
+  Modal,
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -14,6 +15,7 @@ const { width } = Dimensions.get('window');
 export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!', menuType = 'alumno', showBackButton = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnimation] = useState(new Animated.Value(-width * 0.75));
+  const [helpModalVisible, setHelpModalVisible] = useState(false);
 
   const handleBackPress = () => {
     if (navigation && navigation.goBack) {
@@ -105,7 +107,10 @@ export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!', m
           ))}
 
           <View style={styles.menuBottom}>
-            <TouchableOpacity style={styles.settingsIcon}>
+            <TouchableOpacity 
+              style={styles.settingsIcon}
+              onPress={() => setHelpModalVisible(true)}
+            >
               <Text style={styles.settingsText}>⚙️</Text>
             </TouchableOpacity>
           </View>
@@ -146,6 +151,50 @@ export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!', m
           <Text style={styles.headerTitle}>{title}</Text>
         </View>
       </View>
+
+      {/* Modal de Ayuda */}
+      <Modal
+        visible={helpModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setHelpModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setHelpModalVisible(false)}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>¿Necesitas ayuda?</Text>
+
+            <View style={styles.modalMessage}>
+              <Text style={styles.modalText}>
+                Si necesitas ayuda, contacta con nosotros:
+              </Text>
+
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactLabel}>📱 Teléfono:</Text>
+                <Text style={styles.contactValue}>4426087833</Text>
+              </View>
+
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactLabel}>📧 Correo:</Text>
+                <Text style={styles.contactValue}>124051560@upq.edu.mx</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setHelpModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -290,5 +339,94 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
     zIndex: 99,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 10,
+    padding: 8,
+  },
+  modalCloseText: {
+    fontSize: 24,
+    color: '#8B4513',
+    fontWeight: 'bold',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#8B4513',
+    marginBottom: 16,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    marginBottom: 20,
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#5D4E37',
+    marginBottom: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  contactInfo: {
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#F5E6D3',
+    borderRadius: 12,
+  },
+  contactLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8B4513',
+    marginBottom: 4,
+  },
+  contactValue: {
+    fontSize: 15,
+    color: '#5D4E37',
+    fontWeight: '500',
+  },
+  modalButton: {
+    backgroundColor: '#8B4513',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  modalButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
