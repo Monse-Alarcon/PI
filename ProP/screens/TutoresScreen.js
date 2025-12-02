@@ -10,36 +10,54 @@ import {
   Dimensions,
   ActivityIndicator,
   Animated,
+  TextInput,
 } from 'react-native';
-import { getMaestros, getMateriasByMaestro, getCalificacionPromedioPorTutorMateria, getSesionesByUsuario } from '../utils/database';
-import CustomHeader from '../components/CustomHeader';
+import { getMaestros, getMateriasByMaestro, getCalificacionPromedioPorTutorMateria } from '../utils/database';
 
 const { width } = Dimensions.get('window');
 
 export default function TutoresScreen({ navigation, route }) {
   const [tutores, setTutores] = useState([]);
+  const [tutoresFiltrados, setTutoresFiltrados] = useState([]);
+  const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuAnimation] = useState(new Animated.Value(-width * 0.7));
   const currentUserId = route?.params?.usuarioId || navigation?.currentUserId;
 
   useEffect(() => {
     cargarTutores();
   }, []);
 
+  const toggleMenu = () => {
+    if (menuOpen) {
+      Animated.timing(menuAnimation, {
+        toValue: -width * 0.7,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+      setMenuOpen(false);
+    } else {
+      Animated.timing(menuAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+      setMenuOpen(true);
+    }
+  };
+
   const cargarTutores = async () => {
     try {
       setLoading(true);
       const maestros = await getMaestros();
       
-      // Filtrar solo los tutores que tienen sesiones con el usuario actual
-      const tutoresConSesiones = [];
-      
-      for (const maestro of maestros) {
-        const materias = await getMateriasByMaestro(maestro.id);
-        
-        // Verificar si hay sesiones con este tutor para el usuario actual
-        const tieneSesiones = await verificarSesionesConTutor(currentUserId, maestro.id);
-        
-        if (tieneSesiones) {
+      // Cargar materias y calificaciones para cada tutor
+      const tutoresConDatos = await Promise.all(
+        maestros.map(async (maestro) => {
+          const materias = await getMateriasByMaestro(maestro.id);
+          
+          // Obtener calificación promedio por materia
           const materiasConCalificacion = await Promise.all(
             materias.map(async (materia) => {
               const calificacion = await getCalificacionPromedioPorTutorMateria(maestro.id, materia);
@@ -47,23 +65,25 @@ export default function TutoresScreen({ navigation, route }) {
             })
           );
 
+          // Calcular calificación promedio general
           const calificaciones = materiasConCalificacion.map(m => m.calificacion).filter(c => c > 0);
           const promedioGeneral = calificaciones.length > 0
             ? (calificaciones.reduce((a, b) => a + b, 0) / calificaciones.length).toFixed(1)
             : '0';
 
-          tutoresConSesiones.push({
+          return {
             ...maestro,
             materias: materiasConCalificacion,
             calificacionPromedio: parseFloat(promedioGeneral),
-          });
-        }
-      }
+          };
+        })
+      );
 
       // Ordenar por calificación promedio (mayor a menor)
-      tutoresConSesiones.sort((a, b) => b.calificacionPromedio - a.calificacionPromedio);
+      tutoresConDatos.sort((a, b) => b.calificacionPromedio - a.calificacionPromedio);
       
-      setTutores(tutoresConSesiones);
+      setTutores(tutoresConDatos);
+      setTutoresFiltrados(tutoresConDatos);
     } catch (error) {
       console.error('Error al cargar tutores:', error);
       Alert.alert('Error', 'No se pudieron cargar los tutores');
@@ -72,34 +92,39 @@ export default function TutoresScreen({ navigation, route }) {
     }
   };
 
-  // Función para verificar si hay sesiones entre el usuario y el tutor
-  const verificarSesionesConTutor = async (usuarioId, tutorId) => {
-    try {
-      const sesiones = await getSesionesByUsuario(usuarioId);
-      return sesiones.some(sesion => sesion.tutorId === tutorId);
-    } catch (error) {
-      console.error('Error al verificar sesiones:', error);
-      return false;
+  const filtrarTutores = (texto) => {
+    setSearchText(texto);
+    
+    if (texto.trim() === '') {
+      setTutoresFiltrados(tutores);
+      return;
     }
+
+    const textoLower = texto.toLowerCase();
+    const filtrados = tutores.map(tutor => {
+      // Filtrar las materias que coincidan con la búsqueda
+      const materiasFiltradas = tutor.materias.filter(materiaData => 
+        materiaData.materia.toLowerCase().includes(textoLower) ||
+        tutor.name.toLowerCase().includes(textoLower)
+      );
+
+      if (materiasFiltradas.length > 0) {
+        return {
+          ...tutor,
+          materias: materiasFiltradas
+        };
+      }
+      return null;
+    }).filter(tutor => tutor !== null);
+
+    setTutoresFiltrados(filtrados);
   };
 
   const handleTutorPress = (tutor) => {
-    // Navegar a agendar sesión con el tutor preseleccionado
-    navigation.navigate('AgendarSesion', {
+    // Navegar al perfil del tutor
+    navigation.navigate('PerfilTutor', {
       usuarioId: currentUserId,
-      tutorPreseleccionado: tutor,
-    });
-  };
-
-  const handleCalificarTutor = (tutor, materia) => {
-    // Navegar a pantalla de calificación
-    navigation.navigate('Calificar', {
-      usuarioId: currentUserId,
-      personaId: tutor.id,
-      esTutor: true,
-      materia: materia,
-      tutorName: tutor.name,
-      previousScreen: 'tutores',
+      tutorId: tutor.id,
     });
   };
 
@@ -114,15 +139,135 @@ export default function TutoresScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="TUTORES" />
+      {/* Hamburger Menu Overlay */}
+      {menuOpen && (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          onPress={toggleMenu}
+          activeOpacity={0.8}
+        />
+      )}
+
+      {/* Animated Drawer Menu */}
+      <Animated.View
+        style={[
+          styles.drawer,
+          {
+            transform: [{ translateX: menuAnimation }],
+          },
+        ]}
+      >
+        <View style={styles.drawerContent}>
+          <View style={styles.profileSection}>
+            <View style={styles.profileIcon}>
+              <Text style={styles.profileText}>👤</Text>
+            </View>
+            <Text style={styles.profileLabel}>Usuario</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('Home');
+            }}
+          >
+            <Text style={styles.menuItemText}>Inicio</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('MiAgenda', { usuarioId: currentUserId });
+            }}
+          >
+            <Text style={styles.menuItemText}>Mis agendas</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('Tutores', { usuarioId: currentUserId });
+            }}
+          >
+            <Text style={styles.menuItemText}>Tutores</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('Perfil');
+            }}
+          >
+            <Text style={styles.menuItemText}>Perfil</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('Logout');
+            }}
+          >
+            <Text style={styles.menuItemText}>Cerrar sesión</Text>
+          </TouchableOpacity>
+
+          <View style={styles.menuBottom}>
+            <TouchableOpacity style={styles.settingsIcon}>
+              <Text style={styles.settingsText}>⚙️</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
+          <Image
+            source={require('../assets/LogoMenu.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backArrowButton}>
+          <Text style={styles.backArrowText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>TUTORES</Text>
+      </View>
+
+      {/* Barra de búsqueda */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar por nombre o materia..."
+          placeholderTextColor="#A0826D"
+          value={searchText}
+          onChangeText={filtrarTutores}
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={() => filtrarTutores('')}
+          >
+            <Text style={styles.clearButtonText}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {tutores.length === 0 ? (
+        {tutoresFiltrados.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No hay tutores disponibles</Text>
+            <Text style={styles.emptyText}>
+              {searchText.length > 0 
+                ? 'No se encontraron resultados' 
+                : 'No hay tutores disponibles'}
+            </Text>
           </View>
         ) : (
-          tutores.map((tutor) => {
+          tutoresFiltrados.map((tutor) => {
             // Mostrar cada tutor con todas sus materias
             return tutor.materias.map((materiaData, index) => (
               <View
@@ -143,15 +288,8 @@ export default function TutoresScreen({ navigation, route }) {
                     <Text style={styles.ratingText}>
                       {materiaData.calificacion > 0 ? `${materiaData.calificacion}/5` : 'Sin calificar'}
                     </Text>
-                    <Text style={styles.arrowIcon}>→</Text>
+                    <Text style={styles.arrowIcon}></Text>
                   </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.calificarButton}
-                  onPress={() => handleCalificarTutor(tutor, materiaData.materia)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.calificarButtonText}>Calificar</Text>
                 </TouchableOpacity>
               </View>
             ));
@@ -216,6 +354,40 @@ const styles = StyleSheet.create({
     color: '#FFF',
     textAlign: 'center',
   },
+  searchContainer: {
+    backgroundColor: '#FFF',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#8B4513',
+    paddingVertical: 0,
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  clearButtonText: {
+    fontSize: 20,
+    color: '#A0826D',
+    fontWeight: 'bold',
+  },
   content: {
     flex: 1,
     paddingHorizontal: 16,
@@ -275,19 +447,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#C9A878',
     marginLeft: 4,
-  },
-  calificarButton: {
-    backgroundColor: '#C9A878',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  calificarButtonText: {
-    color: '#8B4513',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
   drawer: {
     position: 'absolute',
