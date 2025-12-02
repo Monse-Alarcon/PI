@@ -121,7 +121,7 @@ export default function HomeScreen({ navigation, currentUserId: currentUserIdPro
             <View style={styles.profileIcon}>
               <Text style={styles.profileText}>👤</Text>
             </View>
-            <Text style={styles.profileLabel}>Usuario</Text>
+            <Text style={styles.profileLabel}>Tutor</Text>
           </View>
 
           <TouchableOpacity style={styles.menuItem} onPress={() => setMenuOpen(false)}>
