@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from './screens/LoginScreen';
 import CuentaNuevaScreen from './screens/CuentaNuevaScreen';
 import HomeScreen from './screens/HomeScreen';
+import HomeTutorado from './screens/HomeTutorado';
 import PerfilScreen from './screens/PerfilScreen';
 import EditarPerfilScreen from './screens/EditarPerfilScreen';
 import { useEffect, useState } from 'react';
@@ -14,6 +15,7 @@ import MiAgendaScreen from './screens/MiAgendaScreen';
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome'); // 'welcome', 'login', 'signup', 'home'
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [userType, setUserType] = useState(null); // 'Tutor' | 'Tutorado' | null
   const [screenParams, setScreenParams] = useState({});
   const [miAgendaRefreshKey, setMiAgendaRefreshKey] = useState(0);
 
@@ -44,6 +46,25 @@ export default function App() {
       }
     })();
   }, []);
+
+  // Cargar el tipo de usuario cada vez que cambie el id actual
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (currentUserId) {
+          const { getUserById } = await import('./utils/database');
+          const user = await getUserById(currentUserId);
+          if (mounted) setUserType(user?.userType || null);
+        } else {
+          if (mounted) setUserType(null);
+        }
+      } catch (e) {
+        if (mounted) setUserType(null);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [currentUserId]);
 
   // handle logout action triggered by navigation('Logout')
   useEffect(() => {
@@ -98,19 +119,31 @@ export default function App() {
 
   // authenticated home screen (navegación simple por estado)
   if (currentScreen === 'home') {
+    const commonNavigation = {
+      navigate: (name, params) => {
+        const screenName = String(name).toLowerCase();
+        if (params) {
+          setScreenParams({ [screenName]: params });
+        } else {
+          setScreenParams({ [screenName]: { usuarioId: currentUserId } });
+        }
+        setCurrentScreen(screenName);
+      },
+    };
+
+    if (userType === 'Tutor') {
+      return (
+        <HomeTutorado
+          navigation={commonNavigation}
+          currentUserId={currentUserId}
+        />
+      );
+    }
+
+    // default: Tutorado u otros
     return (
       <HomeScreen
-        navigation={{
-          navigate: (name, params) => {
-            const screenName = String(name).toLowerCase();
-            if (params) {
-              setScreenParams({ [screenName]: params });
-            } else {
-              setScreenParams({ [screenName]: { usuarioId: currentUserId } });
-            }
-            setCurrentScreen(screenName);
-          },
-        }}
+        navigation={commonNavigation}
         currentUserId={currentUserId}
       />
     );
