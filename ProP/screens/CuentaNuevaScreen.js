@@ -18,11 +18,12 @@ export default function CuentaNuevaScreen({ onBack }) {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [edificio, setEdificio] = useState('');
   const [contraseña, setContraseña] = useState('');
   const [userType, setUserType] = useState('Tutorado'); // 'Tutorado' o 'Tutor'
 
   const handleCreateAccount = () => {
-    if (!nombre || !email || !telefono || !contraseña) {
+    if (!nombre || !email || !telefono || !contraseña || !edificio) {
       Alert.alert('Error', 'Por favor completa todos los campos');
       return;
     }
@@ -56,6 +57,7 @@ export default function CuentaNuevaScreen({ onBack }) {
           phone: telefono,
           password: contraseña,
           userType,
+          edificio,
         })
           .then(() => {
             Alert.alert('Éxito', `Cuenta creada para ${nombre} como ${userType}`);
@@ -119,6 +121,17 @@ export default function CuentaNuevaScreen({ onBack }) {
             value={telefono}
             onChangeText={setTelefono}
             keyboardType="phone-pad"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Salón / Edificio (ej. D206)"
+            placeholderTextColor="#999"
+            value={edificio}
+            onChangeText={setEdificio}
+            autoCapitalize="characters"
           />
         </View>
 

@@ -37,6 +37,21 @@ export default function App() {
     })();
   }, []);
 
+  // handle logout action triggered by navigation('Logout')
+  useEffect(() => {
+    if (currentScreen === 'logout') {
+      (async () => {
+        try {
+          await AsyncStorage.removeItem('currentUserId');
+        } catch (e) {
+          console.warn('Error clearing session', e);
+        }
+        setCurrentUserId(null);
+        setCurrentScreen('welcome');
+      })();
+    }
+  }, [currentScreen]);
+
   if (currentScreen === 'login') {
     return (
       <LoginScreen

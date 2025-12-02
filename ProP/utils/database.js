@@ -3,6 +3,15 @@ import { Platform } from 'react-native';
 let usingSQLite = false;
 let db = null;
 
+// Try to load AsyncStorage for native persistent fallback when sqlite isn't available
+let AsyncStorage = null;
+try {
+  AsyncStorage = require('@react-native-async-storage/async-storage').default;
+} catch (err) {
+  AsyncStorage = null;
+}
+const hasAsyncStorage = !!AsyncStorage;
+
 // Safe localStorage detection
 const getStorage = () => {
   try {
@@ -78,7 +87,7 @@ function _webGetUserById(id) {
   });
 }
 
-function _webInsertUser({ name, email, phone, password, userType }) {
+function _webInsertUser({ name, email, phone, password, userType, edificio }) {
   return new Promise((resolve, reject) => {
     try {
       const raw = storage.getItem('users') || '[]';
@@ -88,7 +97,7 @@ function _webInsertUser({ name, email, phone, password, userType }) {
         return reject(new Error('User exists'));
       }
       const id = (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
-      const user = { id, name, email, phone, password, userType };
+      const user = { id, name, email, phone, password, userType, edificio };
       arr.push(user);
       storage.setItem('users', JSON.stringify(arr));
       console.log('_webInsertUser:', email, 'stored');
@@ -97,6 +106,62 @@ function _webInsertUser({ name, email, phone, password, userType }) {
       reject(err);
     }
   });
+}
+
+async function _asyncInit() {
+  try {
+    const raw = await AsyncStorage.getItem('users');
+    if (!raw) {
+      await AsyncStorage.setItem('users', JSON.stringify([]));
+    }
+    return true;
+  } catch (err) {
+    console.warn('_asyncInit error', err);
+    return false;
+  }
+}
+
+async function _asyncGetUserByEmail(email) {
+  try {
+    const raw = (await AsyncStorage.getItem('users')) || '[]';
+    const arr = JSON.parse(raw);
+    const u = arr.find(x => x.email === email) || null;
+    console.log('_asyncGetUserByEmail:', email, 'found:', !!u);
+    return u;
+  } catch (err) {
+    console.warn('_asyncGetUserByEmail error', err);
+    return null;
+  }
+}
+
+async function _asyncGetUserById(id) {
+  try {
+    const raw = (await AsyncStorage.getItem('users')) || '[]';
+    const arr = JSON.parse(raw);
+    const u = arr.find(x => x.id === Number(id)) || null;
+    return u;
+  } catch (err) {
+    console.warn('_asyncGetUserById error', err);
+    return null;
+  }
+}
+
+async function _asyncInsertUser({ name, email, phone, password, userType, edificio }) {
+  try {
+    const raw = (await AsyncStorage.getItem('users')) || '[]';
+    const arr = JSON.parse(raw);
+    if (arr.find(x => x.email === email)) {
+      throw new Error('User exists');
+    }
+    const id = (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
+    const user = { id, name, email, phone, password, userType, edificio };
+    arr.push(user);
+    await AsyncStorage.setItem('users', JSON.stringify(arr));
+    console.log('_asyncInsertUser:', email, 'stored');
+    return user;
+  } catch (err) {
+    throw err;
+  }
 }
 
 export function initDB() {
@@ -109,6 +174,7 @@ export function initDB() {
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             phone TEXT,
+            edificio TEXT,
             password TEXT NOT NULL,
             userType TEXT
           );`,
@@ -121,6 +187,11 @@ export function initDB() {
         );
       });
     });
+  }
+
+  // prefer AsyncStorage fallback on native if available
+  if (hasAsyncStorage && Platform.OS !== 'web') {
+    return _asyncInit();
   }
 
   // web fallback
@@ -150,6 +221,7 @@ export function getUserByEmail(email) {
     });
   }
 
+  if (hasAsyncStorage && Platform.OS !== 'web') return _asyncGetUserByEmail(email);
   return _webGetUserByEmail(email);
 }
 
@@ -176,16 +248,17 @@ export function getUserById(id) {
     });
   }
 
+  if (hasAsyncStorage && Platform.OS !== 'web') return _asyncGetUserById(id);
   return _webGetUserById(id);
 }
 
-export function insertUser({ name, email, phone, password, userType }) {
+export function insertUser({ name, email, phone, password, userType, edificio }) {
   if (usingSQLite && db) {
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
         tx.executeSql(
-          'INSERT INTO users (name, email, phone, password, userType) VALUES (?, ?, ?, ?, ?);',
-          [name, email, phone, password, userType],
+          'INSERT INTO users (name, email, phone, edificio, password, userType) VALUES (?, ?, ?, ?, ?, ?);',
+          [name, email, phone, edificio, password, userType],
           (_, result) => resolve(result),
           (_, err) => {
             reject(err);
@@ -196,7 +269,8 @@ export function insertUser({ name, email, phone, password, userType }) {
     });
   }
 
-  return _webInsertUser({ name, email, phone, password, userType });
+  if (hasAsyncStorage && Platform.OS !== 'web') return _asyncInsertUser({ name, email, phone, password, userType, edificio });
+  return _webInsertUser({ name, email, phone, password, userType, edificio });
 }
 
 export async function seedInitialUser() {
@@ -209,6 +283,7 @@ export async function seedInitialUser() {
         phone: '4423828724',
         password: '12345678',
         userType: 'Tutorado',
+        edificio: 'D206',
       });
     }
   } catch (err) {

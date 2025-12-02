@@ -133,6 +133,16 @@ export default function PerfilScreen({ route, navigation }) {
             <Text style={styles.menuItemText}>Perfil</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('Logout');
+            }}
+          >
+            <Text style={styles.menuItemText}>Cerrar sesión</Text>
+          </TouchableOpacity>
+
           <View style={styles.menuBottom}>
             <TouchableOpacity style={styles.settingsIcon}>
               <Text style={styles.settingsText}>⚙️</Text>
@@ -170,6 +180,9 @@ export default function PerfilScreen({ route, navigation }) {
 
             <Text style={[styles.infoLabel, { marginTop: 12 }]}>Celular</Text>
             <Text style={styles.infoValue}>{usuario?.phone || '—'}</Text>
+
+            <Text style={[styles.infoLabel, { marginTop: 12 }]}>Edificio</Text>
+            <Text style={styles.infoValue}>{usuario?.edificio || '—'}</Text>
           </View>
         </View>
       </ScrollView>

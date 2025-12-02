@@ -145,6 +145,16 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.menuItemText}>Perfil</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('Logout');
+            }}
+          >
+            <Text style={styles.menuItemText}>Cerrar sesión</Text>
+          </TouchableOpacity>
+
           <View style={styles.menuBottom}>
             <TouchableOpacity style={styles.settingsIcon}>
               <Text style={styles.settingsText}>⚙️</Text>
