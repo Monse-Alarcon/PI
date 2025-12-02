@@ -169,6 +169,16 @@ export default function PerfilScreen({ route, navigation }) {
             <Text style={styles.avatarEmoji}>👤</Text>
           </View>
 
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => {
+              const id = usuario?.id || route?.params?.usuarioId || 1;
+              navigation.navigate('EditarPerfil', { usuarioId: id });
+            }}
+          >
+            <Text style={styles.editIcon}>✏️</Text>
+          </TouchableOpacity>
+
           <Text style={styles.nameText}>
             {usuario ? usuario.name : '—'}
           </Text>
@@ -181,8 +191,14 @@ export default function PerfilScreen({ route, navigation }) {
             <Text style={[styles.infoLabel, { marginTop: 12 }]}>Celular</Text>
             <Text style={styles.infoValue}>{usuario?.phone || '—'}</Text>
 
-            <Text style={[styles.infoLabel, { marginTop: 12 }]}>Edificio</Text>
-            <Text style={styles.infoValue}>{usuario?.edificio || '—'}</Text>
+              <Text style={[styles.infoLabel, { marginTop: 12 }]}>Grupo</Text>
+              <Text style={styles.infoValue}>{usuario?.grupo || usuario?.grupo || '—'}</Text>
+
+              <Text style={[styles.infoLabel, { marginTop: 12 }]}>Matrícula</Text>
+              <Text style={styles.infoValue}>{usuario?.matricula || usuario?.matricula || '—'}</Text>
+
+              <Text style={[styles.infoLabel, { marginTop: 12 }]}>Edificio</Text>
+              <Text style={styles.infoValue}>{usuario?.edificio || '—'}</Text>
           </View>
         </View>
       </ScrollView>
@@ -247,6 +263,17 @@ const styles = StyleSheet.create({
   },
   avatarEmoji: {
     fontSize: 48,
+  },
+  editButton: {
+    position: 'absolute',
+    right: '5%',
+    top: 90,
+    backgroundColor: '#FFFFFFAA',
+    padding: 6,
+    borderRadius: 20,
+  },
+  editIcon: {
+    fontSize: 18,
   },
   nameText: {
     fontSize: 18,

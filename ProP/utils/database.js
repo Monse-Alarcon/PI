@@ -87,7 +87,7 @@ function _webGetUserById(id) {
   });
 }
 
-function _webInsertUser({ name, email, phone, password, userType, edificio }) {
+function _webInsertUser({ name, email, phone, password, userType, edificio, grupo, matricula }) {
   return new Promise((resolve, reject) => {
     try {
       const raw = storage.getItem('users') || '[]';
@@ -97,7 +97,7 @@ function _webInsertUser({ name, email, phone, password, userType, edificio }) {
         return reject(new Error('User exists'));
       }
       const id = (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
-      const user = { id, name, email, phone, password, userType, edificio };
+      const user = { id, name, email, phone, password, userType, edificio, grupo: grupo || null, matricula: matricula || null };
       arr.push(user);
       storage.setItem('users', JSON.stringify(arr));
       console.log('_webInsertUser:', email, 'stored');
@@ -146,7 +146,7 @@ async function _asyncGetUserById(id) {
   }
 }
 
-async function _asyncInsertUser({ name, email, phone, password, userType, edificio }) {
+async function _asyncInsertUser({ name, email, phone, password, userType, edificio, grupo, matricula }) {
   try {
     const raw = (await AsyncStorage.getItem('users')) || '[]';
     const arr = JSON.parse(raw);
@@ -154,7 +154,7 @@ async function _asyncInsertUser({ name, email, phone, password, userType, edific
       throw new Error('User exists');
     }
     const id = (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
-    const user = { id, name, email, phone, password, userType, edificio };
+    const user = { id, name, email, phone, password, userType, edificio, grupo: grupo || null, matricula: matricula || null };
     arr.push(user);
     await AsyncStorage.setItem('users', JSON.stringify(arr));
     console.log('_asyncInsertUser:', email, 'stored');
@@ -175,6 +175,8 @@ export function initDB() {
             email TEXT UNIQUE NOT NULL,
             phone TEXT,
             edificio TEXT,
+            grupo TEXT,
+            matricula TEXT,
             password TEXT NOT NULL,
             userType TEXT
           );`,
@@ -252,13 +254,13 @@ export function getUserById(id) {
   return _webGetUserById(id);
 }
 
-export function insertUser({ name, email, phone, password, userType, edificio }) {
+export function insertUser({ name, email, phone, password, userType, edificio, grupo, matricula }) {
   if (usingSQLite && db) {
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
         tx.executeSql(
-          'INSERT INTO users (name, email, phone, edificio, password, userType) VALUES (?, ?, ?, ?, ?, ?);',
-          [name, email, phone, edificio, password, userType],
+          'INSERT INTO users (name, email, phone, edificio, grupo, matricula, password, userType) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+          [name, email, phone, edificio || null, grupo || null, matricula || null, password, userType],
           (_, result) => resolve(result),
           (_, err) => {
             reject(err);
@@ -271,6 +273,64 @@ export function insertUser({ name, email, phone, password, userType, edificio })
 
   if (hasAsyncStorage && Platform.OS !== 'web') return _asyncInsertUser({ name, email, phone, password, userType, edificio });
   return _webInsertUser({ name, email, phone, password, userType, edificio });
+}
+
+function _webUpdateUser(id, changes) {
+  return new Promise((resolve, reject) => {
+    try {
+      const raw = storage.getItem('users') || '[]';
+      const arr = JSON.parse(raw);
+      const idx = arr.findIndex(x => Number(x.id) === Number(id));
+      if (idx === -1) return reject(new Error('User not found'));
+      arr[idx] = Object.assign({}, arr[idx], changes, { id: arr[idx].id });
+      storage.setItem('users', JSON.stringify(arr));
+      resolve(arr[idx]);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+async function _asyncUpdateUser(id, changes) {
+  try {
+    const raw = (await AsyncStorage.getItem('users')) || '[]';
+    const arr = JSON.parse(raw);
+    const idx = arr.findIndex(x => Number(x.id) === Number(id));
+    if (idx === -1) throw new Error('User not found');
+    arr[idx] = Object.assign({}, arr[idx], changes, { id: arr[idx].id });
+    await AsyncStorage.setItem('users', JSON.stringify(arr));
+    return arr[idx];
+  } catch (err) {
+    throw err;
+  }
+}
+
+export function updateUser(id, changes) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'UPDATE users SET name = ?, email = ?, phone = ?, edificio = ?, grupo = ?, matricula = ?, userType = ? WHERE id = ?;',
+          [changes.name || null, changes.email || null, changes.phone || null, changes.edificio || null, changes.grupo || null, changes.matricula || null, changes.userType || null, id],
+          async (_, result) => {
+            try {
+              const updated = await getUserById(id);
+              resolve(updated);
+            } catch (e) {
+              resolve(true);
+            }
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  if (hasAsyncStorage && Platform.OS !== 'web') return _asyncUpdateUser(id, changes);
+  return _webUpdateUser(id, changes);
 }
 
 export async function seedInitialUser() {

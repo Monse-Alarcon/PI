@@ -16,6 +16,8 @@ import { insertUser, getUserByEmail } from '../utils/database';
 
 export default function CuentaNuevaScreen({ onBack }) {
   const [nombre, setNombre] = useState('');
+  const [grupo, setGrupo] = useState('');
+  const [matricula, setMatricula] = useState('');
   const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
   const [edificio, setEdificio] = useState('');
@@ -23,8 +25,8 @@ export default function CuentaNuevaScreen({ onBack }) {
   const [userType, setUserType] = useState('Tutorado'); // 'Tutorado' o 'Tutor'
 
   const handleCreateAccount = () => {
-    if (!nombre || !email || !telefono || !contraseña || !edificio) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
+    if (!nombre || !email || !telefono || !contraseña || !edificio || !grupo || !matricula) {
+      Alert.alert('Error', 'Por favor completa todos los campos (incluyendo Grupo y Matrícula)');
       return;
     }
 
@@ -55,6 +57,8 @@ export default function CuentaNuevaScreen({ onBack }) {
           name: nombre,
           email,
           phone: telefono,
+          grupo,
+          matricula,
           password: contraseña,
           userType,
           edificio,
@@ -98,6 +102,28 @@ export default function CuentaNuevaScreen({ onBack }) {
             value={nombre}
             onChangeText={setNombre}
             autoCapitalize="words"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Grupo"
+            placeholderTextColor="#999"
+            value={grupo}
+            onChangeText={setGrupo}
+            autoCapitalize="characters"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Matrícula"
+            placeholderTextColor="#999"
+            value={matricula}
+            onChangeText={setMatricula}
+            autoCapitalize="none"
           />
         </View>
 

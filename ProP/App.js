@@ -5,6 +5,7 @@ import LoginScreen from './screens/LoginScreen';
 import CuentaNuevaScreen from './screens/CuentaNuevaScreen';
 import HomeScreen from './screens/HomeScreen';
 import PerfilScreen from './screens/PerfilScreen';
+import EditarPerfilScreen from './screens/EditarPerfilScreen';
 import { useEffect, useState } from 'react';
 import { initDB, seedInitialUser, getUserByEmail } from './utils/database';
 
@@ -104,6 +105,19 @@ export default function App() {
   if (currentScreen === 'perfil') {
     return (
       <PerfilScreen
+        navigation={{
+          goBack: () => setCurrentScreen('home'),
+          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+        }}
+        route={{ params: { usuarioId: currentUserId || 1 } }}
+      />
+    );
+  }
+
+  // editar perfil
+  if (currentScreen === 'editarperfil') {
+    return (
+      <EditarPerfilScreen
         navigation={{
           goBack: () => setCurrentScreen('home'),
           navigate: name => setCurrentScreen(String(name).toLowerCase()),
