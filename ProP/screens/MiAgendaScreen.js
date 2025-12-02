@@ -90,12 +90,10 @@ export default function MiAgendaScreen({ navigation, route }) {
   };
 
   const handleEditar = (sesion) => {
-    // Guardar que venimos de miagenda para regresar aquí
-    navigation.navigate('AgendarSesion', {
-      usuarioId: currentUserId,
-      sesionEdit: sesion,
-      previousScreen: 'miagenda',
-    });
+    // Navegar a la pantalla de edición de agenda
+    if (navigation && navigation.navigate) {
+      navigation.navigate('AgendaEditar', { sesionId: sesion.id, previousScreen: 'miagenda' });
+    }
   };
 
   const handleAgendarNueva = () => {
@@ -117,7 +115,7 @@ export default function MiAgendaScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="Mi agenda" />
+      <CustomHeader navigation={navigation} title="Mi agenda" showBackButton={true} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {sesiones.length === 0 ? (
@@ -398,7 +396,6 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     flexDirection: 'row',
-    gap: 12,
   },
   cancelButton: {
     flex: 1,
@@ -407,6 +404,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 8,
   },
   cancelButtonText: {
     color: '#FFF',

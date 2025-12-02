@@ -11,9 +11,15 @@ import {
 
 const { width } = Dimensions.get('window');
 
-export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!', menuType = 'alumno' }) {
+export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!', menuType = 'alumno', showBackButton = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnimation] = useState(new Animated.Value(-width * 0.75));
+
+  const handleBackPress = () => {
+    if (navigation && navigation.goBack) {
+      navigation.goBack();
+    }
+  };
 
   const toggleMenu = () => {
     if (menuOpen) {
@@ -118,13 +124,22 @@ export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!', m
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
-            <Image
-              source={require('../assets/LogoMenu.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+          {showBackButton ? (
+            <TouchableOpacity
+              onPress={handleBackPress}
+              style={styles.backButton}
+            >
+              <Text style={styles.backButtonText}>← Atrás</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
+              <Image
+                source={require('../assets/LogoMenu.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.headerBottom}>
           <Text style={styles.headerTitle}>{title}</Text>
@@ -162,6 +177,20 @@ const styles = StyleSheet.create({
   menuButton: {
     zIndex: 30,
     flexDirection: 'row',
+  },
+  backButton: {
+    zIndex: 30,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#D4AF9F',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8B4513',
   },
   logo: {
     width: 100,
