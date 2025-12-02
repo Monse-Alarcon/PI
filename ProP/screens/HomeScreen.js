@@ -146,6 +146,26 @@ export default function HomeScreen({ navigation, currentUserId: currentUserIdPro
             style={styles.menuItem} 
             onPress={() => {
               setMenuOpen(false);
+              navigation.navigate('Notificaciones');
+            }}
+          >
+            <Text style={styles.menuItemText}>Notificaciones</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('Calificaciones', { nombrePersona: 'Daniela López Pacheco' });
+            }}
+          >
+            <Text style={styles.menuItemText}>Calificaciones</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={() => {
+              setMenuOpen(false);
               navigation.navigate('Perfil');
             }}
           >

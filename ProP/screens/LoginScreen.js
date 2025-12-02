@@ -70,11 +70,11 @@ export default function LoginScreen({ navigation, onBack, onCreateAccount, onLog
   };
 
   const handleForgotPassword = () => {
-    if (!email) {
-      Alert.alert('Error', 'Por favor ingresa tu correo electrónico');
-      return;
+    if (navigation?.navigate) {
+      navigation.navigate('RecuperarContrasena', { email });
+    } else {
+      Alert.alert('Recuperar Contraseña', 'Funcionalidad de recuperación de contraseña');
     }
-    Alert.alert('Recuperar Contraseña', `Se enviará un enlace a: ${email}`);
   };
 
   const handleCreateAccount = () => {

@@ -10,6 +10,9 @@ import { useEffect, useState } from 'react';
 import { initDB, seedInitialUser, getUserByEmail, initSesionesTable, initMaestroMateriasTable, seedMaestrosAndMaterias } from './utils/database';
 import AgendarSesionScreen from './screens/AgendarSesionScreen';
 import MiAgendaScreen from './screens/MiAgendaScreen';
+import CalificacionesScreen from './screens/CalificacionesScreen';
+import NotificacionesScreen from './screens/NotificacionesScreen';
+import RecuperarContrasenaScreen from './screens/RecuperarContrasenaScreen';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome'); // 'welcome', 'login', 'signup', 'home'
@@ -63,6 +66,15 @@ export default function App() {
   if (currentScreen === 'login') {
     return (
       <LoginScreen
+        navigation={{
+          navigate: (name, params) => {
+            const screenName = String(name).toLowerCase();
+            if (params) {
+              setScreenParams({ [screenName]: params });
+            }
+            setCurrentScreen(screenName);
+          },
+        }}
         onBack={() => setCurrentScreen('welcome')}
         onCreateAccount={() => setCurrentScreen('signup')}
         onLoginSuccess={id => {
@@ -186,6 +198,54 @@ export default function App() {
           },
         }}
         route={{ params: { usuarioId: params.usuarioId || currentUserId || 1 } }}
+      />
+    );
+  }
+
+  // calificaciones
+  if (currentScreen === 'calificaciones') {
+    const params = screenParams['calificaciones'] || {};
+    
+    return (
+      <CalificacionesScreen
+        navigation={{
+          goBack: () => {
+            setScreenParams({});
+            setCurrentScreen('home');
+          },
+          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+        }}
+        route={{ params }}
+      />
+    );
+  }
+
+  // notificaciones
+  if (currentScreen === 'notificaciones') {
+    return (
+      <NotificacionesScreen
+        navigation={{
+          goBack: () => setCurrentScreen('home'),
+          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+        }}
+      />
+    );
+  }
+
+  // recuperar contraseña
+  if (currentScreen === 'recuperarcontrasena') {
+    const params = screenParams['recuperarcontrasena'] || {};
+    
+    return (
+      <RecuperarContrasenaScreen
+        navigation={{
+          goBack: () => {
+            setScreenParams({});
+            setCurrentScreen('login');
+          },
+          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+        }}
+        route={{ params }}
       />
     );
   }
