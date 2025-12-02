@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Animated,
 } from 'react-native';
-import { getMaestros, getMateriasByMaestro, getCalificacionPromedioPorTutorMateria } from '../utils/database';
+import { getMaestros, getMateriasByMaestro, getCalificacionPromedioPorTutorMateria, getSesionesByUsuario } from '../utils/database';
 import CustomHeader from '../components/CustomHeader';
 
 const { width } = Dimensions.get('window');
@@ -30,12 +30,16 @@ export default function TutoresScreen({ navigation, route }) {
       setLoading(true);
       const maestros = await getMaestros();
       
-      // Cargar materias y calificaciones para cada tutor
-      const tutoresConDatos = await Promise.all(
-        maestros.map(async (maestro) => {
-          const materias = await getMateriasByMaestro(maestro.id);
-          
-          // Obtener calificación promedio por materia
+      // Filtrar solo los tutores que tienen sesiones con el usuario actual
+      const tutoresConSesiones = [];
+      
+      for (const maestro of maestros) {
+        const materias = await getMateriasByMaestro(maestro.id);
+        
+        // Verificar si hay sesiones con este tutor para el usuario actual
+        const tieneSesiones = await verificarSesionesConTutor(currentUserId, maestro.id);
+        
+        if (tieneSesiones) {
           const materiasConCalificacion = await Promise.all(
             materias.map(async (materia) => {
               const calificacion = await getCalificacionPromedioPorTutorMateria(maestro.id, materia);
@@ -43,29 +47,39 @@ export default function TutoresScreen({ navigation, route }) {
             })
           );
 
-          // Calcular calificación promedio general
           const calificaciones = materiasConCalificacion.map(m => m.calificacion).filter(c => c > 0);
           const promedioGeneral = calificaciones.length > 0
             ? (calificaciones.reduce((a, b) => a + b, 0) / calificaciones.length).toFixed(1)
             : '0';
 
-          return {
+          tutoresConSesiones.push({
             ...maestro,
             materias: materiasConCalificacion,
             calificacionPromedio: parseFloat(promedioGeneral),
-          };
-        })
-      );
+          });
+        }
+      }
 
       // Ordenar por calificación promedio (mayor a menor)
-      tutoresConDatos.sort((a, b) => b.calificacionPromedio - a.calificacionPromedio);
+      tutoresConSesiones.sort((a, b) => b.calificacionPromedio - a.calificacionPromedio);
       
-      setTutores(tutoresConDatos);
+      setTutores(tutoresConSesiones);
     } catch (error) {
       console.error('Error al cargar tutores:', error);
       Alert.alert('Error', 'No se pudieron cargar los tutores');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Función para verificar si hay sesiones entre el usuario y el tutor
+  const verificarSesionesConTutor = async (usuarioId, tutorId) => {
+    try {
+      const sesiones = await getSesionesByUsuario(usuarioId);
+      return sesiones.some(sesion => sesion.tutorId === tutorId);
+    } catch (error) {
+      console.error('Error al verificar sesiones:', error);
+      return false;
     }
   };
 
@@ -77,12 +91,14 @@ export default function TutoresScreen({ navigation, route }) {
     });
   };
 
-  const handleCalificarTutor = (tutor) => {
+  const handleCalificarTutor = (tutor, materia) => {
     // Navegar a pantalla de calificación
     navigation.navigate('Calificar', {
       usuarioId: currentUserId,
       personaId: tutor.id,
       esTutor: true,
+      materia: materia,
+      tutorName: tutor.name,
       previousScreen: 'tutores',
     });
   };
@@ -132,7 +148,7 @@ export default function TutoresScreen({ navigation, route }) {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.calificarButton}
-                  onPress={() => handleCalificarTutor(tutor)}
+                  onPress={() => handleCalificarTutor(tutor, materiaData.materia)}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.calificarButtonText}>Calificar</Text>

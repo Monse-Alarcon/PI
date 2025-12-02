@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,34 +10,62 @@ import {
   Alert,
 } from 'react-native';
 import CustomHeader from '../components/CustomHeader';
+import { getMaestros, getMateriasByMaestro, getCalificacionPromedioPorTutorMateria } from '../utils/database';
 
 export default function HomeScreen({ navigation, currentUserId: currentUserIdProp }) {
   const currentUserId = currentUserIdProp || navigation?.currentUserId;
   const [searchText, setSearchText] = useState('');
+  const [topScores, setTopScores] = useState([]);
 
-  const topScores = [
-    {
-      id: '1',
-      name: 'Monserrath Alarcón Aguilar',
-      subject: 'Ética profesional',
-      score: 4.5,
-      maxScore: 5,
-    },
-    {
-      id: '2',
-      name: 'Daniela López Pacheco',
-      subject: 'Cálculo Integral',
-      score: 4.4,
-      maxScore: 5,
-    },
-    {
-      id: '3',
-      name: 'Ángel León Solís',
-      subject: 'Programación web',
-      score: 4.3,
-      maxScore: 5,
-    },
-  ];
+  useEffect(() => {
+    cargarTopTutores();
+  }, []);
+
+  const cargarTopTutores = async () => {
+    try {
+      const maestros = await getMaestros();
+      
+      const tutoresConCalificaciones = await Promise.all(
+        maestros.map(async (maestro) => {
+          const materias = await getMateriasByMaestro(maestro.id);
+          
+          const materiasConCalificacion = await Promise.all(
+            materias.map(async (materia) => {
+              const calificacion = await getCalificacionPromedioPorTutorMateria(maestro.id, materia);
+              return {
+                materia,
+                calificacion: calificacion || 0
+              };
+            })
+          );
+
+          // Filtrar materias con calificación y obtener la mejor
+          const conCalificacion = materiasConCalificacion.filter(m => m.calificacion > 0);
+          if (conCalificacion.length > 0) {
+            const mejorMateria = conCalificacion.sort((a, b) => b.calificacion - a.calificacion)[0];
+            return {
+              id: maestro.id.toString(),
+              name: maestro.name,
+              subject: mejorMateria.materia,
+              score: mejorMateria.calificacion,
+              maxScore: 5
+            };
+          }
+          return null;
+        })
+      );
+
+      // Filtrar nulos, ordenar por calificación y tomar top 3
+      const topTres = tutoresConCalificaciones
+        .filter(t => t !== null)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+      
+      setTopScores(topTres);
+    } catch (error) {
+      console.error('Error al cargar top tutores:', error);
+    }
+  };
 
   const handleSearch = () => {
     if (searchText.trim()) {

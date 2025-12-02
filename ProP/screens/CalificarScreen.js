@@ -12,6 +12,7 @@ import {
   Animated,
 } from 'react-native';
 import { getUserById, insertCalificacion } from '../utils/database';
+import CustomHeader from '../components/CustomHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -20,33 +21,15 @@ export default function CalificarScreen({ navigation, route }) {
   const [comentario, setComentario] = useState('');
   const [persona, setPersona] = useState(null);
   const [tipoPersona, setTipoPersona] = useState(null); // 'tutor' o 'alumno'
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuAnimation] = useState(new Animated.Value(-width * 0.7));
   const currentUserId = route?.params?.usuarioId || navigation?.currentUserId;
   const personaId = route?.params?.personaId;
   const esTutor = route?.params?.esTutor;
+  const materia = route?.params?.materia;
+  const tutorName = route?.params?.tutorName;
 
   useEffect(() => {
     cargarPersona();
   }, []);
-
-  const toggleMenu = () => {
-    if (menuOpen) {
-      Animated.timing(menuAnimation, {
-        toValue: -width * 0.7,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-      setMenuOpen(false);
-    } else {
-      Animated.timing(menuAnimation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-      setMenuOpen(true);
-    }
-  };
 
   const cargarPersona = async () => {
     try {
@@ -82,7 +65,7 @@ export default function CalificarScreen({ navigation, route }) {
       await insertCalificacion({
         tutorId: esTutor ? personaId : null,
         alumnoId: !esTutor ? personaId : null,
-        materia: null,
+        materia: materia || null,
         calificacion: calificacion,
         comentario: comentario.trim() || null,
         usuarioId: currentUserId,
@@ -124,104 +107,7 @@ export default function CalificarScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      {/* Hamburger Menu Overlay */}
-      {menuOpen && (
-        <TouchableOpacity
-          style={styles.menuOverlay}
-          onPress={toggleMenu}
-          activeOpacity={0.8}
-        />
-      )}
-
-      {/* Animated Drawer Menu */}
-      <Animated.View
-        style={[
-          styles.drawer,
-          {
-            transform: [{ translateX: menuAnimation }],
-          },
-        ]}
-      >
-        <View style={styles.drawerContent}>
-          <View style={styles.profileSection}>
-            <View style={styles.profileIcon}>
-              <Text style={styles.profileText}>👤</Text>
-            </View>
-            <Text style={styles.profileLabel}>Usuario</Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              setMenuOpen(false);
-              navigation.navigate('Home');
-            }}
-          >
-            <Text style={styles.menuItemText}>Inicio</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              setMenuOpen(false);
-              navigation.navigate('MiAgenda', { usuarioId: currentUserId });
-            }}
-          >
-            <Text style={styles.menuItemText}>Mis agendas</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              setMenuOpen(false);
-              navigation.navigate('Tutores', { usuarioId: currentUserId });
-            }}
-          >
-            <Text style={styles.menuItemText}>Tutores</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              setMenuOpen(false);
-              navigation.navigate('Perfil');
-            }}
-          >
-            <Text style={styles.menuItemText}>Perfil</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              setMenuOpen(false);
-              navigation.navigate('Logout');
-            }}
-          >
-            <Text style={styles.menuItemText}>Cerrar sesión</Text>
-          </TouchableOpacity>
-
-          <View style={styles.menuBottom}>
-            <TouchableOpacity style={styles.settingsIcon}>
-              <Text style={styles.settingsText}>⚙️</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Animated.View>
-
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
-          <Image
-            source={require('../assets/LogoMenu.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backArrowButton}>
-          <Text style={styles.backArrowText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Califica a tu tutor o alumno</Text>
-      </View>
+      <CustomHeader navigation={navigation} title="Calificar tutor" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Instruction Text */}
@@ -229,12 +115,13 @@ export default function CalificarScreen({ navigation, route }) {
           Selecciona las estrellitas que consideras que califican a este {tipoPersona === 'tutor' ? 'profesor' : 'alumno'}
         </Text>
 
-        {/* Person Name */}
-        {persona && (
-          <View style={styles.nameContainer}>
-            <Text style={styles.personName}>{persona.name}</Text>
-          </View>
-        )}
+        {/* Tutor Name and Subject */}
+        <View style={styles.nameContainer}>
+          <Text style={styles.personName}>{tutorName || persona?.name || 'Tutor'}</Text>
+          {materia && (
+            <Text style={styles.materiaText}>Materia: {materia}</Text>
+          )}
+        </View>
 
         {/* Stars Rating */}
         <View style={styles.starsContainer}>
@@ -332,6 +219,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#8B4513',
+  },
+  materiaText: {
+    fontSize: 16,
+    color: '#8B3A3A',
+    marginTop: 8,
+    fontWeight: '600',
   },
   starsContainer: {
     flexDirection: 'row',
