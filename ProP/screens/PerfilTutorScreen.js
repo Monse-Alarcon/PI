@@ -144,6 +144,27 @@ export default function PerfilTutorScreen({ navigation, route }) {
           )}
         </View>
 
+        {/* Botón Calificar */}
+        <TouchableOpacity
+          style={styles.calificarButton}
+          onPress={() => {
+            if (materias.length > 0) {
+              navigation.navigate('Calificar', {
+                usuarioId: currentUserId,
+                personaId: tutorId,
+                materia: materias[0].materia,
+                esTutor: true,
+                previousScreen: 'PerfilTutor',
+              });
+            } else {
+              Alert.alert('Error', 'El tutor no tiene materias asignadas');
+            }
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.calificarButtonText}>Calificar tutor</Text>
+        </TouchableOpacity>
+
         {/* Botón Agendar Sesión */}
         <TouchableOpacity
           style={styles.agendarButton}
@@ -312,6 +333,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     marginTop: 12,
+  },
+  calificarButton: {
+    backgroundColor: '#C9A878',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  calificarButtonText: {
+    color: '#8B4513',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   agendarButton: {
     backgroundColor: '#8B4513',
