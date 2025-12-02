@@ -599,6 +599,77 @@ export function getSesionById(sesionId) {
   });
 }
 
+export function verificarSesionExistente(tutorId, fecha, hora, excluirSesionId = null) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        // Normalizar la fecha para comparar solo el día (sin hora)
+        const fechaDate = new Date(fecha);
+        const fechaInicio = new Date(fechaDate.getFullYear(), fechaDate.getMonth(), fechaDate.getDate(), 0, 0, 0);
+        const fechaFin = new Date(fechaDate.getFullYear(), fechaDate.getMonth(), fechaDate.getDate(), 23, 59, 59);
+        
+        let query = 'SELECT * FROM sesiones WHERE tutorId = ? AND hora = ? AND fecha >= ? AND fecha <= ? AND estado != ?';
+        let params = [tutorId, hora, fechaInicio.toISOString(), fechaFin.toISOString(), 'cancelada'];
+        
+        if (excluirSesionId) {
+          query += ' AND id != ?';
+          params.push(excluirSesionId);
+        }
+        
+        tx.executeSql(
+          query,
+          params,
+          (_, result) => {
+            if (result.rows.length > 0) {
+              resolve(result.rows.item(0));
+            } else {
+              resolve(null);
+            }
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  // AsyncStorage/Web fallback
+  return new Promise(async (resolve, reject) => {
+    try {
+      const storage = hasAsyncStorage && Platform.OS !== 'web' ? AsyncStorage : getStorage();
+      const raw = Platform.OS === 'web' 
+        ? storage.getItem('sesiones') || '[]'
+        : (await storage.getItem('sesiones')) || '[]';
+      const arr = JSON.parse(raw);
+      
+      const fechaDate = new Date(fecha);
+      const fechaInicio = new Date(fechaDate.getFullYear(), fechaDate.getMonth(), fechaDate.getDate(), 0, 0, 0);
+      const fechaFin = new Date(fechaDate.getFullYear(), fechaDate.getMonth(), fechaDate.getDate(), 23, 59, 59);
+      
+      const sesionExistente = arr.find(s => {
+        // Excluir sesiones canceladas
+        if (s.estado === 'cancelada') return false;
+        
+        if (Number(s.tutorId) !== Number(tutorId)) return false;
+        if (s.hora !== hora) return false;
+        
+        const sesionFecha = new Date(s.fecha);
+        if (sesionFecha < fechaInicio || sesionFecha > fechaFin) return false;
+        
+        if (excluirSesionId && Number(s.id) === Number(excluirSesionId)) return false;
+        
+        return true;
+      });
+      
+      resolve(sesionExistente || null);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 function _webUpdateSesion(sesionId, changes) {
   return new Promise((resolve, reject) => {
     try {

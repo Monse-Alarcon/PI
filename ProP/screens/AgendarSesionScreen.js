@@ -10,7 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { getUserById } from '../utils/database';
-import { insertSesion, updateSesion, getMaestros, getMateriasByMaestro, getAllMaterias, getMaestrosByMateria } from '../utils/database';
+import { insertSesion, updateSesion, getMaestros, getMateriasByMaestro, getAllMaterias, getMaestrosByMateria, verificarSesionExistente } from '../utils/database';
 
 const { width } = Dimensions.get('window');
 
@@ -284,6 +284,23 @@ export default function AgendarSesionScreen({ navigation, route }) {
       const fechaHora = new Date(selectedDate);
       fechaHora.setHours(h, m, 0, 0);
 
+      // Verificar si ya existe una sesión con el mismo maestro, fecha y hora
+      const sesionExistente = await verificarSesionExistente(
+        selectedMaestro.id,
+        fechaHora.toISOString(),
+        selectedTime,
+        isEditing ? sesionId : null // Excluir la sesión actual si estamos editando
+      );
+
+      if (sesionExistente) {
+        Alert.alert(
+          'Error',
+          'Ya existe una sesión agendada con este maestro en la misma fecha y hora. Por favor selecciona otra fecha u hora.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       if (isEditing && sesionId) {
         // Actualizar sesión existente
         await updateSesion(sesionId, {
@@ -300,13 +317,7 @@ export default function AgendarSesionScreen({ navigation, route }) {
           [
             {
               text: 'OK',
-              onPress: () => {
-                navigation.goBack();
-                // Forzar recarga en MiAgendaScreen después de un breve delay
-                setTimeout(() => {
-                  // Esto se manejará en MiAgendaScreen
-                }, 100);
-              },
+              onPress: () => navigation.goBack(),
             },
           ]
         );
@@ -327,13 +338,7 @@ export default function AgendarSesionScreen({ navigation, route }) {
           [
             {
               text: 'OK',
-              onPress: () => {
-                navigation.goBack();
-                // Forzar recarga en MiAgendaScreen después de un breve delay
-                setTimeout(() => {
-                  // Esto se manejará en MiAgendaScreen
-                }, 100);
-              },
+              onPress: () => navigation.goBack(),
             },
           ]
         );
