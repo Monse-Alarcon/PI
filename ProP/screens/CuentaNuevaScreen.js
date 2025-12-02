@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 
-import { insertUser, getUserByEmail } from '../utils/database';
+import { insertUser, getUserByEmail, insertMaestroMateria, getUserById } from '../utils/database';
 
 export default function CuentaNuevaScreen({ onBack }) {
   const [nombre, setNombre] = useState('');
@@ -23,8 +23,35 @@ export default function CuentaNuevaScreen({ onBack }) {
   const [edificio, setEdificio] = useState('');
   const [contraseña, setContraseña] = useState('');
   const [userType, setUserType] = useState('Tutorado'); // 'Tutorado' o 'Tutor'
+  const [materiasSeleccionadas, setMateriasSeleccionadas] = useState([]);
 
-  const handleCreateAccount = () => {
+  // Lista de materias disponibles
+  const materiasDisponibles = [
+    'Programacion',
+    'Estructuras de Datos',
+    'Algoritmos',
+    'Cálculo Integral',
+    'Álgebra Lineal',
+    'Matemáticas Discretas',
+    'Base de Datos',
+    'Ingeniería de Software',
+    'Sistemas Operativos',
+    'Redes de Computadoras',
+    'Arquitectura de Computadoras',
+    'Programación Web',
+    'Inteligencia Artificial',
+    'Seguridad Informática',
+  ];
+
+  const toggleMateria = (materia) => {
+    if (materiasSeleccionadas.includes(materia)) {
+      setMateriasSeleccionadas(materiasSeleccionadas.filter(m => m !== materia));
+    } else {
+      setMateriasSeleccionadas([...materiasSeleccionadas, materia]);
+    }
+  };
+
+  const handleCreateAccount = async () => {
     if (!nombre || !email || !telefono || !contraseña || !edificio || !grupo || !matricula) {
       Alert.alert('Error', 'Por favor completa todos los campos (incluyendo Grupo y Matrícula)');
       return;
@@ -45,37 +72,72 @@ export default function CuentaNuevaScreen({ onBack }) {
       return;
     }
 
-    // Verificar si ya existe
-    getUserByEmail(email)
-      .then(existing => {
-        if (existing) {
-          Alert.alert('Error', 'Ya existe un usuario con ese correo');
-          return;
+    // Si es tutor, validar que haya seleccionado al menos una materia
+    if (userType === 'Tutor' && materiasSeleccionadas.length === 0) {
+      Alert.alert('Error', 'Por favor selecciona al menos una materia que impartes');
+      return;
+    }
+
+    try {
+      // Verificar si ya existe
+      const existing = await getUserByEmail(email);
+      if (existing) {
+        Alert.alert('Error', 'Ya existe un usuario con ese correo');
+        return;
+      }
+
+      // Crear el usuario
+      const result = await insertUser({
+        name: nombre,
+        email,
+        phone: telefono,
+        grupo,
+        matricula,
+        password: contraseña,
+        userType,
+        edificio,
+      });
+
+      // Si es tutor, agregar las materias
+      if (userType === 'Tutor') {
+        let tutorId;
+        
+        // Obtener el ID del usuario recién creado
+        if (result && result.insertId) {
+          tutorId = result.insertId;
+        } else if (result && result.id) {
+          tutorId = result.id;
+        } else {
+          // Buscar el usuario por email para obtener su ID (más confiable)
+          const nuevoUsuario = await getUserByEmail(email);
+          if (nuevoUsuario) {
+            tutorId = nuevoUsuario.id;
+          }
         }
 
-        insertUser({
-          name: nombre,
-          email,
-          phone: telefono,
-          grupo,
-          matricula,
-          password: contraseña,
-          userType,
-          edificio,
-        })
-          .then(() => {
-            Alert.alert('Éxito', `Cuenta creada para ${nombre} como ${userType}`);
-            if (onBack) onBack();
-          })
-          .catch(err => {
-            console.log('insert err', err);
-            Alert.alert('Error', 'No se pudo crear la cuenta');
-          });
-      })
-      .catch(err => {
-        console.log('check user err', err);
-        Alert.alert('Error', 'Ocurrió un error');
-      });
+        // Agregar cada materia seleccionada
+        if (tutorId) {
+          for (const materia of materiasSeleccionadas) {
+            try {
+              await insertMaestroMateria({ maestroId: tutorId, materia });
+            } catch (err) {
+              console.log('Error al agregar materia:', materia, err);
+            }
+          }
+          Alert.alert('Éxito', `Cuenta creada para ${nombre} como ${userType} con ${materiasSeleccionadas.length} materia(s)`);
+        } else {
+          Alert.alert('Éxito', `Cuenta creada para ${nombre} como ${userType}. Nota: No se pudieron agregar las materias.`);
+        }
+      } else {
+        Alert.alert('Éxito', `Cuenta creada para ${nombre} como ${userType}`);
+      }
+
+      if (onBack) onBack();
+
+    } catch (err) {
+      console.log('Error al crear cuenta:', err);
+      Alert.alert('Error', 'No se pudo crear la cuenta');
+    }
   };
 
   return (
@@ -179,7 +241,10 @@ export default function CuentaNuevaScreen({ onBack }) {
               styles.userTypeButton,
               userType === 'Tutorado' && styles.userTypeButtonActive,
             ]}
-            onPress={() => setUserType('Tutorado')}
+            onPress={() => {
+              setUserType('Tutorado');
+              setMateriasSeleccionadas([]);
+            }}
           >
             <Text
               style={[
@@ -208,6 +273,39 @@ export default function CuentaNuevaScreen({ onBack }) {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Selector de materias para tutores */}
+        {userType === 'Tutor' && (
+          <View style={styles.materiasContainer}>
+            <Text style={styles.materiasTitle}>Selecciona las materias que impartes:</Text>
+            <View style={styles.materiasGrid}>
+              {materiasDisponibles.map((materia, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.materiaChip,
+                    materiasSeleccionadas.includes(materia) && styles.materiaChipSelected,
+                  ]}
+                  onPress={() => toggleMateria(materia)}
+                >
+                  <Text
+                    style={[
+                      styles.materiaChipText,
+                      materiasSeleccionadas.includes(materia) && styles.materiaChipTextSelected,
+                    ]}
+                  >
+                    {materia}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {materiasSeleccionadas.length > 0 && (
+              <Text style={styles.materiasCount}>
+                {materiasSeleccionadas.length} materia(s) seleccionada(s)
+              </Text>
+            )}
+          </View>
+        )}
 
         <TouchableOpacity
           style={styles.createButton}
@@ -324,5 +422,47 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  materiasContainer: {
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  materiasTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8B4513',
+    marginBottom: 12,
+  },
+  materiasGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  materiaChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#A0826D',
+    borderWidth: 2,
+    borderColor: '#A0826D',
+    marginBottom: 8,
+  },
+  materiaChipSelected: {
+    backgroundColor: '#8B4513',
+    borderColor: '#8B4513',
+  },
+  materiaChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#FFF',
+  },
+  materiaChipTextSelected: {
+    fontWeight: 'bold',
+  },
+  materiasCount: {
+    fontSize: 14,
+    color: '#8B4513',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
