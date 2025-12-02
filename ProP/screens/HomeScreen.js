@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#8B4513',
     paddingTop: 18,
-    paddingBottom: 30,
+    paddingBottom: 70,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   menuButton: {
     position: 'absolute',
     left: 16,
-    top: 1,
+    top: 38,
     zIndex: 40,
   },
   logo: {
@@ -283,6 +283,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
+    left: 10,
+    top: 60,
     fontWeight: 'bold',
     color: '#FFF',
     textAlign: 'center',
