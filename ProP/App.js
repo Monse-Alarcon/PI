@@ -7,18 +7,25 @@ import HomeScreen from './screens/HomeScreen';
 import PerfilScreen from './screens/PerfilScreen';
 import EditarPerfilScreen from './screens/EditarPerfilScreen';
 import { useEffect, useState } from 'react';
-import { initDB, seedInitialUser, getUserByEmail } from './utils/database';
+import { initDB, seedInitialUser, getUserByEmail, initSesionesTable, initMaestroMateriasTable, seedMaestrosAndMaterias } from './utils/database';
+import AgendarSesionScreen from './screens/AgendarSesionScreen';
+import MiAgendaScreen from './screens/MiAgendaScreen';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome'); // 'welcome', 'login', 'signup', 'home'
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [screenParams, setScreenParams] = useState({});
+  const [miAgendaRefreshKey, setMiAgendaRefreshKey] = useState(0);
 
   useEffect(() => {
     // initialize DB and seed a known user
     (async () => {
       try {
         await initDB();
+        await initSesionesTable();
+        await initMaestroMateriasTable();
         await seedInitialUser();
+        await seedMaestrosAndMaterias();
         // check persisted session
         try {
           const stored = await AsyncStorage.getItem('currentUserId');
@@ -94,7 +101,15 @@ export default function App() {
     return (
       <HomeScreen
         navigation={{
-          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+          navigate: (name, params) => {
+            const screenName = String(name).toLowerCase();
+            if (params) {
+              setScreenParams({ [screenName]: params });
+            } else {
+              setScreenParams({ [screenName]: { usuarioId: currentUserId } });
+            }
+            setCurrentScreen(screenName);
+          },
         }}
         currentUserId={currentUserId}
       />
@@ -123,6 +138,54 @@ export default function App() {
           navigate: name => setCurrentScreen(String(name).toLowerCase()),
         }}
         route={{ params: { usuarioId: currentUserId || 1 } }}
+      />
+    );
+  }
+
+  // agendar sesion
+  if (currentScreen === 'agendarsesion') {
+    const params = screenParams['agendarsesion'] || {};
+    const previousScreen = params.previousScreen || 'home';
+    
+    return (
+      <AgendarSesionScreen
+        navigation={{
+          goBack: () => {
+            setScreenParams({});
+            setCurrentScreen(previousScreen);
+            // Si veníamos de miagenda, forzar recarga
+            if (previousScreen === 'miagenda') {
+              setMiAgendaRefreshKey(prev => prev + 1);
+            }
+          },
+          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+        }}
+        route={{ params: { usuarioId: params.usuarioId || currentUserId || 1, sesionEdit: params.sesionEdit } }}
+      />
+    );
+  }
+
+  // mi agenda
+  if (currentScreen === 'miagenda') {
+    const params = screenParams['miagenda'] || {};
+    
+    return (
+      <MiAgendaScreen
+        key={miAgendaRefreshKey}
+        navigation={{
+          goBack: () => {
+            setScreenParams({});
+            setCurrentScreen('home');
+          },
+          navigate: (name, navParams) => {
+            const screenName = String(name).toLowerCase();
+            if (navParams) {
+              setScreenParams({ [screenName]: navParams });
+            }
+            setCurrentScreen(screenName);
+          },
+        }}
+        route={{ params: { usuarioId: params.usuarioId || currentUserId || 1 } }}
       />
     );
   }

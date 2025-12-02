@@ -15,7 +15,8 @@ import {
 
 const { width } = Dimensions.get('window');
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation, currentUserId: currentUserIdProp }) {
+  const currentUserId = currentUserIdProp || navigation?.currentUserId;
   const [searchText, setSearchText] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnimation] = useState(new Animated.Value(-width * 0.7));
@@ -69,11 +70,11 @@ export default function HomeScreen({ navigation }) {
   };
 
   const handleScheduleSession = () => {
-    Alert.alert('Agendar sesión', 'Ir a la pantalla de agendar sesión');
+    navigation.navigate('AgendarSesion', { usuarioId: currentUserId });
   };
 
   const handleMyAgenda = () => {
-    Alert.alert('Mi agenda', 'Ir a tus sesiones agendadas');
+    navigation.navigate('MiAgenda', { usuarioId: currentUserId });
   };
 
   const handleTutors = () => {
