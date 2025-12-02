@@ -123,7 +123,7 @@ export default function CalificarScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="Calificar tutor" />
+      <CustomHeader navigation={navigation} title="Calificar tutor" menuType="tutor" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Instruction Text */}

@@ -80,7 +80,17 @@ export default function SolicitudesScreen({ navigation, route }) {
         hora: sesion.hora,
         estado: nuevoEstado,
       });
-      await cargarSolicitudes();
+      
+      // Actualizar el estado local inmediatamente para reflejar el cambio
+      setSesiones(prevSesiones => 
+        prevSesiones.map(s => 
+          s.id === sesion.id ? { ...s, estado: nuevoEstado } : s
+        )
+      );
+      
+      // Recargar datos en segundo plano para asegurar sincronización
+      cargarSolicitudes();
+      
       Alert.alert('Éxito', `Solicitud ${nuevoEstado === 'aceptada' ? 'aceptada' : 'rechazada'}`);
     } catch (error) {
       console.error('Error al actualizar sesión:', error);
@@ -132,7 +142,7 @@ export default function SolicitudesScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="Solicitudes" />
+      <CustomHeader navigation={navigation} title="Solicitudes" menuType="tutor" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {sesionesParaMostrar.length === 0 ? (

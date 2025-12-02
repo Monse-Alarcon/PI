@@ -11,7 +11,7 @@ import {
 
 const { width } = Dimensions.get('window');
 
-export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!' }) {
+export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!', menuType = 'alumno' }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnimation] = useState(new Animated.Value(-width * 0.75));
 
@@ -33,13 +33,31 @@ export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!' })
     }
   };
 
-  const menuItems = [
-    { label: 'Inicio', screen: 'home' },
-    { label: 'Mis agendas', screen: 'miagenda' },
-    { label: 'Tutores', screen: 'tutores' },
-    { label: 'Perfil', screen: 'perfil' },
-    { label: 'Cerrar sesión', screen: 'logout' },
-  ];
+  let menuItems = [];
+
+  if (menuType === 'tutor') {
+    // Menú para TUTOR
+    menuItems = [
+      { label: 'Inicio', screen: 'home' },
+      { label: 'Mis agendas', screen: 'miagenda' },
+      { label: 'Sesiones', screen: 'solicitudes' },
+      { label: 'Tutores', screen: 'tutores' },
+      { label: 'Alumnos', screen: 'alumnos' },
+      { label: 'Perfil', screen: 'perfil' },
+      { label: 'Calificar alumnos y tutores', screen: 'calificaciones' },
+      { label: 'Cerrar sesión', screen: 'logout' },
+    ];
+  } else {
+    // Menú para ALUMNO / TUTORADO (por defecto)
+    menuItems = [
+      { label: 'Inicio', screen: 'home' },
+      { label: 'Mis agendas', screen: 'miagenda' },
+      { label: 'Tutores', screen: 'tutores' },
+      { label: 'Calificar tutores', screen: 'tutores' },
+      { label: 'Perfil', screen: 'perfil' },
+      { label: 'Cerrar sesión', screen: 'logout' },
+    ];
+  }
 
   return (
     <>

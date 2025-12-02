@@ -4,20 +4,27 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from './screens/LoginScreen';
 import CuentaNuevaScreen from './screens/CuentaNuevaScreen';
 import HomeScreen from './screens/HomeScreen';
-import HomeTutorado from './screens/HomeTutorado';
+import HomeTutorado from './screens2/HomeTutorado';
 import PerfilScreen from './screens/PerfilScreen';
+import PerfilScreenTutor from './screens2/PerfilScreen';
 import EditarPerfilScreen from './screens/EditarPerfilScreen';
 import { useEffect, useState } from 'react';
 import { initDB, seedInitialUser, getUserByEmail, initSesionesTable, initMaestroMateriasTable, seedMaestrosAndMaterias, initCalificacionesTable, seedCalificaciones, seedAlumnos } from './utils/database';
 import AgendarSesionScreen from './screens/AgendarSesionScreen';
+import AgendarSesionScreenTutor from './screens2/AgendarSesionScreen';
 import MiAgendaScreen from './screens/MiAgendaScreen';
-import CalificacionesScreen from './screens/CalificacionesScreen';
+import MiAgendaScreenTutor from './screens2/MiAgendaScreen';
+import CalificacionesScreen from './screens2/CalificacionesScreen';
 import NotificacionesScreen from './screens/NotificacionesScreen';
 import RecuperarContrasenaScreen from './screens/RecuperarContrasenaScreen';
 import TutoresScreen from './screens/TutoresScreen';
+import TutoresScreenTutor from './screens2/TutoresScreen';
 import CalificarScreen from './screens/CalificarScreen';
-import SolicitudesScreen from './screens/SolicitudesScreen';
+import CalificarScreenTutor from './screens2/CalificarScreen';
+import SolicitudesScreen from './screens2/SolicitudesScreen';
 import PerfilTutorScreen from './screens/PerfilTutorScreen';
+import PerfilTutorScreenTutor from './screens2/PerfilTutorScreen';
+import AlumnosScreen from './screens2/AlumnosScreen';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome'); // 'welcome', 'login', 'signup', 'home'
@@ -170,8 +177,9 @@ export default function App() {
 
   // perfil screen
   if (currentScreen === 'perfil') {
+    const PerfilComponent = userType === 'Tutor' ? PerfilScreenTutor : PerfilScreen;
     return (
-      <PerfilScreen
+      <PerfilComponent
         navigation={{
           goBack: () => setCurrentScreen('home'),
           navigate: name => setCurrentScreen(String(name).toLowerCase()),
@@ -198,9 +206,10 @@ export default function App() {
   if (currentScreen === 'agendarsesion') {
     const params = screenParams['agendarsesion'] || {};
     const previousScreen = params.previousScreen || 'home';
+    const AgendarSesionComponent = userType === 'Tutor' ? AgendarSesionScreenTutor : AgendarSesionScreen;
     
     return (
-      <AgendarSesionScreen
+      <AgendarSesionComponent
         navigation={{
           goBack: () => {
             setScreenParams({});
@@ -220,9 +229,10 @@ export default function App() {
   // mi agenda
   if (currentScreen === 'miagenda') {
     const params = screenParams['miagenda'] || {};
+    const MiAgendaComponent = userType === 'Tutor' ? MiAgendaScreenTutor : MiAgendaScreen;
     
     return (
-      <MiAgendaScreen
+      <MiAgendaComponent
         key={miAgendaRefreshKey}
         navigation={{
           goBack: () => {
@@ -253,7 +263,14 @@ export default function App() {
             setScreenParams({});
             setCurrentScreen('home');
           },
-          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+          navigate: (name, navParams) => {
+            const screenName = String(name).toLowerCase();
+            if (navParams) {
+              setScreenParams({ [screenName]: navParams });
+            }
+            setCurrentScreen(screenName);
+          },
+          currentUserId,
         }}
         route={{ params }}
       />
@@ -293,8 +310,9 @@ export default function App() {
   // tutores
   if (currentScreen === 'tutores') {
     const params = screenParams['tutores'] || {};
+    const TutoresComponent = userType === 'Tutor' ? TutoresScreenTutor : TutoresScreen;
     return (
-      <TutoresScreen
+      <TutoresComponent
         navigation={{
           goBack: () => {
             setScreenParams({});
@@ -338,13 +356,38 @@ export default function App() {
     );
   }
 
+  // alumnos (vista para tutores)
+  if (currentScreen === 'alumnos') {
+    const params = screenParams['alumnos'] || {};
+
+    return (
+      <AlumnosScreen
+        navigation={{
+          goBack: () => {
+            setScreenParams({});
+            setCurrentScreen('home');
+          },
+          navigate: (name, navParams) => {
+            const screenName = String(name).toLowerCase();
+            if (navParams) {
+              setScreenParams({ [screenName]: navParams });
+            }
+            setCurrentScreen(screenName);
+          },
+          currentUserId,
+        }}
+        route={{ params }}
+      />
+    );
+  }
   // calificar
   if (currentScreen === 'calificar') {
     const params = screenParams['calificar'] || {};
     const previousScreen = params.previousScreen || 'tutores';
+    const CalificarComponent = userType === 'Tutor' ? CalificarScreenTutor : CalificarScreen;
     
     return (
-      <CalificarScreen
+      <CalificarComponent
         navigation={{
           goBack: () => {
             setScreenParams({});
@@ -374,9 +417,10 @@ export default function App() {
   // perfil tutor
   if (currentScreen === 'perfiltutor') {
     const params = screenParams['perfiltutor'] || {};
+    const PerfilTutorComponent = userType === 'Tutor' ? PerfilTutorScreenTutor : PerfilTutorScreen;
     
     return (
-      <PerfilTutorScreen
+      <PerfilTutorComponent
         navigation={{
           goBack: () => {
             setScreenParams({});
