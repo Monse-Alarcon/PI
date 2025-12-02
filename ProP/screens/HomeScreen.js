@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   FlatList,
@@ -14,7 +13,6 @@ import { getMaestros, getMateriasByMaestro, getCalificacionPromedioPorTutorMater
 
 export default function HomeScreen({ navigation, currentUserId: currentUserIdProp }) {
   const currentUserId = currentUserIdProp || navigation?.currentUserId;
-  const [searchText, setSearchText] = useState('');
   const [topScores, setTopScores] = useState([]);
 
   useEffect(() => {
@@ -119,23 +117,6 @@ export default function HomeScreen({ navigation, currentUserId: currentUserIdPro
         style={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Busca alguna materia"
-            placeholderTextColor="#999"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={() => setSearchText('')}
-          >
-            <Text style={styles.clearText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Top Scores Section */}
         <View style={styles.scoresSection}>
           <Text style={styles.scoresTitle}>Mejores puntuajes</Text>
