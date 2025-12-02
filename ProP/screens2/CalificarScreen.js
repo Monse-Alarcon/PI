@@ -11,7 +11,7 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
-import { getUserById, insertCalificacion } from '../utils/database';
+import { getUserById, insertCalificacion, insertNotificacion } from '../utils/database';
 import CustomHeader from '../components/CustomHeader';
 
 const { width } = Dimensions.get('window');
@@ -71,6 +71,20 @@ export default function CalificarScreen({ navigation, route }) {
         comentario: comentario.trim() || null,
         usuarioId: currentUserId,
       });
+
+      // Crear notificación para el tutor cuando recibe una calificación
+      if (esTutor && personaId) {
+        const calificador = await getUserById(currentUserId);
+        const nombreCalificador = calificador?.name || 'Un colega';
+        const estrellas = '⭐'.repeat(calificacion);
+        
+        await insertNotificacion({
+          usuarioId: personaId,
+          tipo: 'calificacion',
+          titulo: 'Nueva Calificación Recibida',
+          descripcion: `${nombreCalificador} calificó tu perfil${materia ? ` por la materia de ${materia}` : ''} con ${calificacion} ${calificacion === 1 ? 'estrella' : 'estrellas'} ${estrellas}`,
+        });
+      }
 
       Alert.alert(
         'Éxito',

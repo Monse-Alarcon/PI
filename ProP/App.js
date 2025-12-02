@@ -9,7 +9,7 @@ import PerfilScreen from './screens/PerfilScreen';
 import PerfilScreenTutor from './screens2/PerfilScreen';
 import EditarPerfilScreen from './screens/EditarPerfilScreen';
 import { useEffect, useState } from 'react';
-import { initDB, seedInitialUser, getUserByEmail, initSesionesTable, initMaestroMateriasTable, seedMaestrosAndMaterias, initCalificacionesTable, seedCalificaciones, seedAlumnos } from './utils/database';
+import { initDB, seedInitialUser, getUserByEmail, initSesionesTable, initMaestroMateriasTable, seedMaestrosAndMaterias, initCalificacionesTable, seedCalificaciones, seedAlumnos, initNotificacionesTable } from './utils/database';
 import AgendarSesionScreen from './screens/AgendarSesionScreen';
 import AgendarSesionScreenTutor from './screens2/AgendarSesionScreen';
 import MiAgendaScreen from './screens/MiAgendaScreen';
@@ -41,6 +41,7 @@ export default function App() {
         await initSesionesTable();
         await initMaestroMateriasTable();
         await initCalificacionesTable();
+        await initNotificacionesTable();
         await seedInitialUser();
         await seedAlumnos();
         await seedMaestrosAndMaterias();
@@ -285,6 +286,7 @@ export default function App() {
           goBack: () => setCurrentScreen('home'),
           navigate: name => setCurrentScreen(String(name).toLowerCase()),
         }}
+        route={{ params: { usuarioId: currentUserId || 1 } }}
       />
     );
   }

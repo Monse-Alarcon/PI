@@ -976,7 +976,27 @@ export function initMaestroMateriasTable() {
                 FOREIGN KEY (usuarioId) REFERENCES users(id)
               );`,
               [],
-              () => resolve(true),
+              () => {
+                // Crear tabla de notificaciones
+                tx.executeSql(
+                  `CREATE TABLE IF NOT EXISTS notificaciones (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    usuarioId INTEGER NOT NULL,
+                    tipo TEXT NOT NULL,
+                    titulo TEXT NOT NULL,
+                    descripcion TEXT NOT NULL,
+                    leida INTEGER DEFAULT 0,
+                    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (usuarioId) REFERENCES users(id)
+                  );`,
+                  [],
+                  () => resolve(true),
+                  (_, err) => {
+                    reject(err);
+                    return false;
+                  }
+                );
+              },
               (_, err) => {
                 reject(err);
                 return false;
@@ -1664,6 +1684,256 @@ export function insertCalificacion({ tutorId, alumnoId, materia, calificacion, c
     return _asyncInsertCalificacion({ tutorId, alumnoId, materia, calificacion, comentario, usuarioId });
   }
   return _webInsertCalificacion({ tutorId, alumnoId, materia, calificacion, comentario, usuarioId });
+}
+
+// ========== NOTIFICACIONES FUNCTIONS ==========
+
+function _webInitNotificaciones() {
+  if (!storage.getItem('notificaciones')) {
+    storage.setItem('notificaciones', JSON.stringify([]));
+  }
+  return Promise.resolve(true);
+}
+
+async function _asyncInitNotificaciones() {
+  try {
+    const raw = await AsyncStorage.getItem('notificaciones');
+    if (!raw) {
+      await AsyncStorage.setItem('notificaciones', JSON.stringify([]));
+    }
+    return true;
+  } catch (err) {
+    console.warn('_asyncInitNotificaciones error', err);
+    return false;
+  }
+}
+
+export function initNotificacionesTable() {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          `CREATE TABLE IF NOT EXISTS notificaciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuarioId INTEGER NOT NULL,
+            tipo TEXT NOT NULL,
+            titulo TEXT NOT NULL,
+            descripcion TEXT NOT NULL,
+            leida INTEGER DEFAULT 0,
+            createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (usuarioId) REFERENCES users(id)
+          );`,
+          [],
+          () => resolve(true),
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  if (hasAsyncStorage && Platform.OS !== 'web') {
+    return _asyncInitNotificaciones();
+  }
+
+  return _webInitNotificaciones();
+}
+
+function _webInsertNotificacion({ usuarioId, tipo, titulo, descripcion }) {
+  return new Promise((resolve, reject) => {
+    try {
+      const raw = storage.getItem('notificaciones') || '[]';
+      const arr = JSON.parse(raw);
+      const id = (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
+      const item = {
+        id,
+        usuarioId: Number(usuarioId),
+        tipo,
+        titulo,
+        descripcion,
+        leida: 0,
+        createdAt: new Date().toISOString(),
+      };
+      arr.push(item);
+      storage.setItem('notificaciones', JSON.stringify(arr));
+      resolve(item);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+async function _asyncInsertNotificacion({ usuarioId, tipo, titulo, descripcion }) {
+  try {
+    const raw = (await AsyncStorage.getItem('notificaciones')) || '[]';
+    const arr = JSON.parse(raw);
+    const id = (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
+    const item = {
+      id,
+      usuarioId: Number(usuarioId),
+      tipo,
+      titulo,
+      descripcion,
+      leida: 0,
+      createdAt: new Date().toISOString(),
+    };
+    arr.push(item);
+    await AsyncStorage.setItem('notificaciones', JSON.stringify(arr));
+    return item;
+  } catch (err) {
+    throw err;
+  }
+}
+
+export function insertNotificacion({ usuarioId, tipo, titulo, descripcion }) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'INSERT INTO notificaciones (usuarioId, tipo, titulo, descripcion) VALUES (?, ?, ?, ?);',
+          [usuarioId, tipo, titulo, descripcion],
+          (_, result) => {
+            tx.executeSql(
+              'SELECT * FROM notificaciones WHERE id = ?;',
+              [result.insertId],
+              (_, result2) => {
+                if (result2.rows.length > 0) {
+                  resolve(result2.rows.item(0));
+                } else {
+                  resolve(result);
+                }
+              },
+              (_, err) => {
+                resolve(result);
+              }
+            );
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  if (hasAsyncStorage && Platform.OS !== 'web') {
+    return _asyncInsertNotificacion({ usuarioId, tipo, titulo, descripcion });
+  }
+  return _webInsertNotificacion({ usuarioId, tipo, titulo, descripcion });
+}
+
+export function getNotificacionesByUsuario(usuarioId) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'SELECT * FROM notificaciones WHERE usuarioId = ? ORDER BY createdAt DESC;',
+          [usuarioId],
+          (_, result) => {
+            const notificaciones = [];
+            for (let i = 0; i < result.rows.length; i++) {
+              notificaciones.push(result.rows.item(i));
+            }
+            resolve(notificaciones);
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const storage = hasAsyncStorage && Platform.OS !== 'web' ? AsyncStorage : getStorage();
+      const raw = Platform.OS === 'web' 
+        ? storage.getItem('notificaciones') || '[]'
+        : (await storage.getItem('notificaciones')) || '[]';
+      const arr = JSON.parse(raw);
+      const notificaciones = arr.filter(n => Number(n.usuarioId) === Number(usuarioId));
+      notificaciones.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      resolve(notificaciones);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+export function marcarNotificacionLeida(notificacionId) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'UPDATE notificaciones SET leida = 1 WHERE id = ?;',
+          [notificacionId],
+          (_, result) => resolve(true),
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const storage = hasAsyncStorage && Platform.OS !== 'web' ? AsyncStorage : getStorage();
+      const raw = Platform.OS === 'web' 
+        ? storage.getItem('notificaciones') || '[]'
+        : (await storage.getItem('notificaciones')) || '[]';
+      const arr = JSON.parse(raw);
+      const idx = arr.findIndex(n => Number(n.id) === Number(notificacionId));
+      if (idx !== -1) {
+        arr[idx].leida = 1;
+        if (Platform.OS === 'web') {
+          storage.setItem('notificaciones', JSON.stringify(arr));
+        } else {
+          await storage.setItem('notificaciones', JSON.stringify(arr));
+        }
+      }
+      resolve(true);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+// Limpiar todas las notificaciones (para desarrollo/testing)
+export async function limpiarNotificaciones() {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'DELETE FROM notificaciones;',
+          [],
+          (_, result) => resolve(true),
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  // AsyncStorage/Web fallback
+  try {
+    const storage = hasAsyncStorage && Platform.OS !== 'web' ? AsyncStorage : getStorage();
+    if (Platform.OS === 'web') {
+      storage.setItem('notificaciones', JSON.stringify([]));
+    } else {
+      await storage.setItem('notificaciones', JSON.stringify([]));
+    }
+    return Promise.resolve(true);
+  } catch (err) {
+    return Promise.reject(err);
+  }
 }
 
 export default db;

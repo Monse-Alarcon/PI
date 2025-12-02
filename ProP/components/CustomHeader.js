@@ -43,6 +43,7 @@ export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!', m
       { label: 'Sesiones', screen: 'solicitudes' },
       { label: 'Tutores', screen: 'tutores' },
       { label: 'Alumnos', screen: 'alumnos' },
+      { label: 'Notificaciones', screen: 'notificaciones' },
       { label: 'Perfil', screen: 'perfil' },
       { label: 'Calificar alumnos y tutores', screen: 'calificaciones' },
       { label: 'Cerrar sesión', screen: 'logout' },

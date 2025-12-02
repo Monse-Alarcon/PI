@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { getSesionesByTutor, updateSesion, getUserById } from '../utils/database';
+import { getSesionesByTutor, updateSesion, getUserById, insertNotificacion } from '../utils/database';
 import CustomHeader from '../components/CustomHeader';
 
 export default function SolicitudesScreen({ navigation, route }) {
@@ -80,6 +80,29 @@ export default function SolicitudesScreen({ navigation, route }) {
         hora: sesion.hora,
         estado: nuevoEstado,
       });
+      
+      // Crear notificación al alumno cuando se acepta
+      if (nuevoEstado === 'aceptada') {
+        const tutor = await getUserById(tutorId);
+        const nombreTutor = tutor?.name || 'el tutor';
+        const fechaFormateada = formatearFecha(sesion.fecha);
+        
+        // Notificación para el alumno
+        await insertNotificacion({
+          usuarioId: sesion.usuarioId,
+          tipo: 'sesion_confirmada',
+          titulo: `Sesión Confirmada con ${nombreTutor}`,
+          descripcion: `Tu tutoría para la materia de ${sesion.materia} fue aceptada. La hora de la sesión será el ${fechaFormateada} a partir de las ${sesion.hora}`,
+        });
+
+        // Notificación para el tutor (tú)
+        await insertNotificacion({
+          usuarioId: tutorId,
+          tipo: 'sesion_confirmada',
+          titulo: `Sesión Confirmada con ${sesion.nombreAlumno}`,
+          descripcion: `Has aceptado la tutoría de ${sesion.materia} con ${sesion.nombreAlumno}. La sesión será el ${fechaFormateada} a las ${sesion.hora}`,
+        });
+      }
       
       // Actualizar el estado local inmediatamente para reflejar el cambio
       setSesiones(prevSesiones => 

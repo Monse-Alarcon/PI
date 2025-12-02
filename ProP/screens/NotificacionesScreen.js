@@ -1,60 +1,106 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {View,Text,StyleSheet,ScrollView,TouchableOpacity,Image,ActivityIndicator,Alert,} from 'react-native';
+import { getNotificacionesByUsuario, limpiarNotificaciones } from '../utils/database';
 
-export default function NotificacionesScreen({ navigation }) {
+export default function NotificacionesScreen({ navigation, route }) {
+  const { usuarioId } = route?.params || {};
+  const [notificaciones, setNotificaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    cargarNotificaciones();
+  }, [usuarioId]);
+
+  const cargarNotificaciones = async () => {
+    try {
+      setLoading(true);
+      const notifs = await getNotificacionesByUsuario(usuarioId);
+      setNotificaciones(notifs);
+    } catch (error) {
+      console.error('Error cargando notificaciones:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoBack = () => {
     if (navigation?.goBack) {
       navigation.goBack();
     }
   };
 
-  const notificaciones = [
-    {
-      id: 1,
-      tipo: 'sesion',
-      titulo: 'Sesión Confirmada con Ángel León',
-      descripcion: 'Tu tutoría para la materia de Cálculo fue aceptada. La hora de la sesión será el Jueves a partir de las 5:00 PM',
-      tiempo: 'Justo Ahora',
-      icono: '📅',
-    },
-    {
-      id: 2,
-      tipo: 'calificacion',
-      titulo: 'Nueva Calificación Recibida',
-      descripcion: 'Tu tutora Sofía calificó tu perfil por la sesión del Lunes con 5 estrellas.',
-      tiempo: 'Hace 2 horas',
-      icono: '⭐',
-      destacado: true,
-    },
-    {
-      id: 3,
-      tipo: 'mensaje',
-      titulo: 'Mensaje de Monserrath Alarcón',
-      descripcion: '¿Podemos repasar el tema de hoy en la siguiente sesión de la próxima semana?',
-      tiempo: 'Ayer',
-      icono: '✉️',
-    },
-  ];
+  const handleLimpiarNotificaciones = async () => {
+    Alert.alert(
+      'Limpiar Notificaciones',
+      '¿Estás seguro de que quieres eliminar todas las notificaciones? (Esto es temporal para pruebas)',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Limpiar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await limpiarNotificaciones();
+              setNotificaciones([]);
+              Alert.alert('Éxito', 'Notificaciones eliminadas');
+            } catch (error) {
+              console.error('Error limpiando notificaciones:', error);
+              Alert.alert('Error', 'No se pudieron limpiar las notificaciones');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const obtenerIconoPorTipo = (tipo) => {
+    switch(tipo) {
+      case 'sesion_confirmada':
+        return '📅';
+      case 'calificacion':
+        return '⭐';
+      case 'mensaje':
+        return '✉️';
+      case 'sesion_cancelada':
+        return '❌';
+      default:
+        return '🔔';
+    }
+  };
+
+  const obtenerTiempoTranscurrido = (fecha) => {
+    const ahora = new Date();
+    const creacion = new Date(fecha);
+    const diferencia = ahora - creacion;
+    
+    const minutos = Math.floor(diferencia / 60000);
+    const horas = Math.floor(diferencia / 3600000);
+    const dias = Math.floor(diferencia / 86400000);
+    
+    if (minutos < 1) return 'Justo Ahora';
+    if (minutos < 60) return `Hace ${minutos} minuto${minutos > 1 ? 's' : ''}`;
+    if (horas < 24) return `Hace ${horas} hora${horas > 1 ? 's' : ''}`;
+    if (dias === 1) return 'Ayer';
+    if (dias < 7) return `Hace ${dias} días`;
+    return creacion.toLocaleDateString();
+  };
 
   const renderNotificacion = (notif) => {
+    const icono = obtenerIconoPorTipo(notif.tipo);
+    const tiempo = obtenerTiempoTranscurrido(notif.createdAt);
+    const esReciente = new Date() - new Date(notif.createdAt) < 3600000; // menos de 1 hora
+
     return (
       <TouchableOpacity
         key={notif.id}
         style={[
           styles.notificationCard,
-          notif.destacado && styles.notificationHighlight,
+          esReciente && styles.notificationHighlight,
         ]}
         activeOpacity={0.7}
       >
         <View style={styles.iconContainer}>
-          <Text style={styles.iconText}>{notif.icono}</Text>
+          <Text style={styles.iconText}>{icono}</Text>
         </View>
         
         <View style={styles.notificationContent}>
@@ -62,10 +108,10 @@ export default function NotificacionesScreen({ navigation }) {
           <Text style={styles.notificationDescription}>
             {notif.descripcion}
           </Text>
-          <Text style={styles.notificationTime}>{notif.tiempo}</Text>
+          <Text style={styles.notificationTime}>{tiempo}</Text>
         </View>
 
-        {notif.destacado && (
+        {esReciente && (
           <View style={styles.highlightIcon}>
             <Text style={styles.highlightIconText}>👉</Text>
           </View>
@@ -91,7 +137,21 @@ export default function NotificacionesScreen({ navigation }) {
 
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={cargarNotificaciones}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.refreshButtonText}>🔄</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Notificaciones</Text>
+        <TouchableOpacity
+          style={styles.clearButton}
+          onPress={handleLimpiarNotificaciones}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.clearButtonText}>🗑️</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Lista de notificaciones */}
@@ -99,9 +159,21 @@ export default function NotificacionesScreen({ navigation }) {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.notificationsContainer}>
-          {notificaciones.map(renderNotificacion)}
-        </View>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#8B4513" />
+            <Text style={styles.loadingText}>Cargando notificaciones...</Text>
+          </View>
+        ) : notificaciones.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>🔔</Text>
+            <Text style={styles.emptyText}>No tienes notificaciones</Text>
+          </View>
+        ) : (
+          <View style={styles.notificationsContainer}>
+            {notificaciones.map(renderNotificacion)}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -128,11 +200,37 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     paddingHorizontal: 20,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#5D3A1A',
+    flex: 1,
+    textAlign: 'center',
+  },
+  refreshButton: {
+    backgroundColor: '#3E6B3E',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    width: 40,
+    alignItems: 'center',
+  },
+  refreshButtonText: {
+    fontSize: 20,
+  },
+  clearButton: {
+    backgroundColor: '#8B4513',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    width: 40,
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    fontSize: 20,
   },
   scrollView: {
     flex: 1,
@@ -200,5 +298,29 @@ const styles = StyleSheet.create({
   },
   highlightIconText: {
     fontSize: 30,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#5D3A1A',
+  },
+  emptyContainer: {
+    padding: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyIcon: {
+    fontSize: 60,
+    marginBottom: 15,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#5D3A1A',
+    textAlign: 'center',
   },
 });
