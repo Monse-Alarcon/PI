@@ -354,6 +354,58 @@ export function updateUser(id, changes) {
   return _webUpdateUser(id, changes);
 }
 
+export async function updateUserPassword(email, newPassword) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'UPDATE users SET password = ? WHERE email = ?;',
+          [newPassword, email],
+          (_, result) => {
+            resolve(true);
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  // AsyncStorage fallback
+  if (hasAsyncStorage && Platform.OS !== 'web') {
+    try {
+      const raw = await AsyncStorage.getItem('users');
+      const users = raw ? JSON.parse(raw) : [];
+      const index = users.findIndex(u => u.email === email);
+      if (index !== -1) {
+        users[index].password = newPassword;
+        await AsyncStorage.setItem('users', JSON.stringify(users));
+        return true;
+      }
+      throw new Error('Usuario no encontrado');
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  // Web fallback
+  try {
+    const raw = storage.getItem('users');
+    const users = raw ? JSON.parse(raw) : [];
+    const index = users.findIndex(u => u.email === email);
+    if (index !== -1) {
+      users[index].password = newPassword;
+      storage.setItem('users', JSON.stringify(users));
+      return Promise.resolve(true);
+    }
+    return Promise.reject(new Error('Usuario no encontrado'));
+  } catch (err) {
+    return Promise.reject(err);
+  }
+}
+
 export async function seedInitialUser() {
   try {
     const existing = await getUserByEmail('124050107@upq.edu.mx');
