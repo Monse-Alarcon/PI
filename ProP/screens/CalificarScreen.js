@@ -26,6 +26,7 @@ export default function CalificarScreen({ navigation, route }) {
   const esTutor = route?.params?.esTutor;
   const materia = route?.params?.materia;
   const tutorName = route?.params?.tutorName;
+  const previousScreen = route?.params?.previousScreen;
 
   useEffect(() => {
     cargarPersona();
@@ -77,7 +78,13 @@ export default function CalificarScreen({ navigation, route }) {
         [
           {
             text: 'OK',
-            onPress: () => navigation.goBack(),
+            onPress: () => {
+              navigation.navigate('PerfilTutor', {
+                usuarioId: currentUserId,
+                tutorId: personaId,
+                refresh: Date.now()
+              });
+            },
           },
         ]
       );

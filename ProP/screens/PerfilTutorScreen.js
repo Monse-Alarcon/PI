@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ export default function PerfilTutorScreen({ navigation, route }) {
 
   useEffect(() => {
     cargarDatosTutor();
-  }, []);
+  }, [route?.params?.refresh]);
 
   const cargarDatosTutor = async () => {
     try {
