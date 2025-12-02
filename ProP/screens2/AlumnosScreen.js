@@ -7,12 +7,15 @@ import {
   ActivityIndicator,
   Alert,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { getAlumnos } from '../utils/database';
 import CustomHeader from '../components/CustomHeader';
 
 export default function AlumnosScreen({ navigation }) {
   const [alumnos, setAlumnos] = useState([]);
+  const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
+  const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,13 +26,27 @@ export default function AlumnosScreen({ navigation }) {
     try {
       setLoading(true);
       const data = await getAlumnos();
+      // ordenar por nombre
+      data.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       setAlumnos(data);
+      setAlumnosFiltrados(data);
     } catch (error) {
       console.error('Error al cargar alumnos:', error);
       Alert.alert('Error', 'No se pudieron cargar los alumnos');
     } finally {
       setLoading(false);
     }
+  };
+
+  const filtrar = (texto) => {
+    setSearchText(texto);
+    if (texto.trim() === '') {
+      setAlumnosFiltrados(alumnos);
+      return;
+    }
+    const lower = texto.toLowerCase();
+    const filtrados = alumnos.filter(a => (a.name || '').toLowerCase().includes(lower) || (a.email || '').toLowerCase().includes(lower) || (a.matricula || '').toLowerCase().includes(lower));
+    setAlumnosFiltrados(filtrados);
   };
 
   if (loading) {
@@ -45,17 +62,34 @@ export default function AlumnosScreen({ navigation }) {
     <View style={styles.container}>
       <CustomHeader navigation={navigation} title="Alumnos" menuType="tutor" />
 
+      {/* Search bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar alumno por nombre, correo o matrícula..."
+          placeholderTextColor="#999"
+          value={searchText}
+          onChangeText={filtrar}
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity style={styles.clearButton} onPress={() => filtrar('')}>
+            <Text style={styles.clearText}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {alumnos.length === 0 ? (
+        {alumnosFiltrados.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No hay alumnos registrados</Text>
           </View>
         ) : (
-          alumnos.map(alumno => (
+          alumnosFiltrados.map(alumno => (
             <TouchableOpacity
               key={alumno.id}
               style={styles.card}
               activeOpacity={0.7}
+              onPress={() => navigation && navigation.navigate ? navigation.navigate('PerfilAlumno', { alumnoId: alumno.id, previousScreen: 'alumnos' }) : null}
             >
               <View style={styles.cardHeader}>
                 <Text style={styles.cardName}>{alumno.name}</Text>

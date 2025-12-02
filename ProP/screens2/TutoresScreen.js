@@ -9,99 +9,52 @@ import {
   ActivityIndicator,
   TextInput,
 } from 'react-native';
-import { getMaestros, getMateriasByMaestro, getCalificacionPromedioPorTutorMateria } from '../utils/database';
+import { getAlumnos } from '../utils/database';
 import CustomHeader from '../components/CustomHeader';
 
 export default function TutoresScreen({ navigation, route }) {
-  const [tutores, setTutores] = useState([]);
-  const [tutoresFiltrados, setTutoresFiltrados] = useState([]);
+  const [alumnos, setAlumnos] = useState([]);
+  const [alumnosFiltrados, setAlumnosFiltrados] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
   const currentUserId = route?.params?.usuarioId || navigation?.currentUserId;
 
   useEffect(() => {
-    cargarTutores();
+    cargarAlumnos();
   }, []);
 
-  const cargarTutores = async () => {
+  const cargarAlumnos = async () => {
     try {
       setLoading(true);
-      const maestros = await getMaestros();
-      
-      // Cargar materias y calificaciones para cada tutor
-      const tutoresConDatos = await Promise.all(
-        maestros.map(async (maestro) => {
-          const materias = await getMateriasByMaestro(maestro.id);
-          
-          // Obtener calificación promedio por materia
-          const materiasConCalificacion = await Promise.all(
-            materias.map(async (materia) => {
-              const calificacion = await getCalificacionPromedioPorTutorMateria(maestro.id, materia);
-              return { materia, calificacion };
-            })
-          );
-
-          // Calcular calificación promedio general
-          const calificaciones = materiasConCalificacion.map(m => m.calificacion).filter(c => c > 0);
-          const promedioGeneral = calificaciones.length > 0
-            ? (calificaciones.reduce((a, b) => a + b, 0) / calificaciones.length).toFixed(1)
-            : '0';
-
-          return {
-            ...maestro,
-            materias: materiasConCalificacion,
-            calificacionPromedio: parseFloat(promedioGeneral),
-          };
-        })
-      );
-
-      // Ordenar por calificación promedio (mayor a menor)
-      tutoresConDatos.sort((a, b) => b.calificacionPromedio - a.calificacionPromedio);
-      
-      setTutores(tutoresConDatos);
-      setTutoresFiltrados(tutoresConDatos);
+      const lista = await getAlumnos();
+      // ordenar por nombre
+      lista.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      setAlumnos(lista);
+      setAlumnosFiltrados(lista);
     } catch (error) {
-      console.error('Error al cargar tutores:', error);
-      Alert.alert('Error', 'No se pudieron cargar los tutores');
+      console.error('Error al cargar alumnos:', error);
+      Alert.alert('Error', 'No se pudieron cargar los alumnos');
     } finally {
       setLoading(false);
     }
   };
 
-  const filtrarTutores = (texto) => {
+  const filtrarAlumnos = (texto) => {
     setSearchText(texto);
-    
     if (texto.trim() === '') {
-      setTutoresFiltrados(tutores);
+      setAlumnosFiltrados(alumnos);
       return;
     }
-
     const textoLower = texto.toLowerCase();
-    const filtrados = tutores.map(tutor => {
-      // Filtrar las materias que coincidan con la búsqueda
-      const materiasFiltradas = tutor.materias.filter(materiaData => 
-        materiaData.materia.toLowerCase().includes(textoLower) ||
-        tutor.name.toLowerCase().includes(textoLower)
-      );
-
-      if (materiasFiltradas.length > 0) {
-        return {
-          ...tutor,
-          materias: materiasFiltradas
-        };
-      }
-      return null;
-    }).filter(tutor => tutor !== null);
-
-    setTutoresFiltrados(filtrados);
+    const filtrados = alumnos.filter(a => (a.name || '').toLowerCase().includes(textoLower));
+    setAlumnosFiltrados(filtrados);
   };
 
-  const handleTutorPress = (tutor) => {
-    // Navegar al perfil del tutor
-    navigation.navigate('PerfilTutor', {
-      usuarioId: currentUserId,
-      tutorId: tutor.id,
-    });
+  const handleAlumnoPress = (alumno) => {
+    // Navegar al perfil del alumno seleccionado
+    if (navigation && navigation.navigate) {
+      navigation.navigate('PerfilAlumno', { alumnoId: alumno.id });
+    }
   };
 
   if (loading) {
@@ -124,12 +77,12 @@ export default function TutoresScreen({ navigation, route }) {
           placeholder="Buscar por nombre o materia..."
           placeholderTextColor="#A0826D"
           value={searchText}
-          onChangeText={filtrarTutores}
+            onChangeText={filtrarAlumnos}
         />
         {searchText.length > 0 && (
           <TouchableOpacity
             style={styles.clearButton}
-            onPress={() => filtrarTutores('')}
+              onPress={() => filtrarAlumnos('')}
           >
             <Text style={styles.clearButtonText}>✕</Text>
           </TouchableOpacity>
@@ -137,42 +90,28 @@ export default function TutoresScreen({ navigation, route }) {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {tutoresFiltrados.length === 0 ? (
+        {alumnosFiltrados.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
               {searchText.length > 0 
                 ? 'No se encontraron resultados' 
-                : 'No hay tutores disponibles'}
+                : 'No hay alumnos disponibles'}
             </Text>
           </View>
         ) : (
-          tutoresFiltrados.map((tutor) => {
-            // Mostrar cada tutor con todas sus materias
-            return tutor.materias.map((materiaData, index) => (
-              <View
-                key={`${tutor.id}-${materiaData.materia}-${index}`}
-                style={styles.tutorCard}
-              >
-                <TouchableOpacity
-                  style={styles.tutorCardContent}
-                  onPress={() => handleTutorPress(tutor)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.tutorContent}>
-                    <Text style={styles.tutorName}>{tutor.name}</Text>
-                    <Text style={styles.tutorSubject}>Materia: {materiaData.materia}</Text>
-                  </View>
-                  <View style={styles.tutorRating}>
-                    <Text style={styles.starIcon}>⭐</Text>
-                    <Text style={styles.ratingText}>
-                      {materiaData.calificacion > 0 ? `${materiaData.calificacion}/5` : 'Sin calificar'}
-                    </Text>
-                    <Text style={styles.arrowIcon}></Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            ));
-          })
+          alumnosFiltrados.map((alumno) => (
+            <View key={`alumno-${alumno.id}`} style={styles.tutorCard}>
+              <TouchableOpacity style={styles.tutorCardContent} onPress={() => handleAlumnoPress(alumno)} activeOpacity={0.7}>
+                <View style={styles.tutorContent}>
+                  <Text style={styles.tutorName}>{alumno.name}</Text>
+                  <Text style={styles.tutorSubject}>Correo: {alumno.email || '—'}</Text>
+                </View>
+                <View style={styles.tutorRating}>
+                  <Text style={styles.arrowIcon}></Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          ))
         )}
       </ScrollView>
     </View>

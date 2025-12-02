@@ -14,6 +14,7 @@ import AgendarSesionScreen from './screens/AgendarSesionScreen';
 import AgendarSesionScreenTutor from './screens2/AgendarSesionScreen';
 import MiAgendaScreen from './screens/MiAgendaScreen';
 import MiAgendaScreenTutor from './screens2/MiAgendaScreen';
+import AgendaEditar from './screens2/AgendaEditar';
 import CalificacionesScreen from './screens2/CalificacionesScreen';
 import NotificacionesScreen from './screens/NotificacionesScreen';
 import RecuperarContrasenaScreen from './screens/RecuperarContrasenaScreen';
@@ -25,6 +26,7 @@ import SolicitudesScreen from './screens2/SolicitudesScreen';
 import PerfilTutorScreen from './screens/PerfilTutorScreen';
 import PerfilTutorScreenTutor from './screens2/PerfilTutorScreen';
 import AlumnosScreen from './screens2/AlumnosScreen';
+import PerfilAlumnoScreen from './screens/PerfilAlumnoScreen';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome'); // 'welcome', 'login', 'signup', 'home'
@@ -117,6 +119,23 @@ export default function App() {
           setCurrentUserId(id);
           setCurrentScreen('home');
         }}
+      />
+    );
+  }
+
+  // perfil alumno (vista que usan tutores al seleccionar un alumno)
+  if (currentScreen === 'perfilalumno') {
+    const params = screenParams['perfilalumno'] || {};
+    return (
+      <PerfilAlumnoScreen
+        navigation={{
+          goBack: () => {
+            setScreenParams({});
+            setCurrentScreen(params.previousScreen || 'tutores');
+          },
+          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+        }}
+        route={{ params: { alumnoId: params.alumnoId } }}
       />
     );
   }
@@ -252,6 +271,29 @@ export default function App() {
       />
     );
   }
+
+    // editar una agenda (desde MiAgenda)
+    if (currentScreen === 'agendaeditar') {
+      const params = screenParams['agendaeditar'] || {};
+      return (
+        <AgendaEditar
+          navigation={{
+            goBack: () => {
+              setScreenParams({});
+              setCurrentScreen(params.previousScreen || 'miagenda');
+            },
+            navigate: (name, navParams) => {
+              const screenName = String(name).toLowerCase();
+              if (navParams) {
+                setScreenParams({ [screenName]: navParams });
+              }
+              setCurrentScreen(screenName);
+            },
+          }}
+          route={{ params: { sesionId: params.sesionId, previousScreen: params.previousScreen || 'miagenda' } }}
+        />
+      );
+    }
 
   // calificaciones
   if (currentScreen === 'calificaciones') {

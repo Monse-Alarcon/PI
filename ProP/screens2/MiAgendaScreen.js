@@ -110,12 +110,10 @@ export default function MiAgendaScreen({ navigation, route }) {
   };
 
   const handleEditar = (sesion) => {
-    // Guardar que venimos de miagenda para regresar aquí
-    navigation.navigate('AgendarSesion', {
-      usuarioId: currentUserId,
-      sesionEdit: sesion,
-      previousScreen: 'miagenda',
-    });
+    // Navegar a la pantalla de edición de agenda (solo cambiar estado)
+    if (navigation && navigation.navigate) {
+      navigation.navigate('AgendaEditar', { sesionId: sesion.id, previousScreen: 'miagenda' });
+    }
   };
 
   const handleAgendarNueva = () => {
