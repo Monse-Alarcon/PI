@@ -107,7 +107,8 @@ export default function PerfilScreen({ route, navigation }) {
             style={styles.menuItem}
             onPress={() => {
               setMenuOpen(false);
-              navigation.navigate('Home');
+              const usuarioId = route?.params?.usuarioId || 1;
+              navigation.navigate('MiAgenda', { usuarioId });
             }}
           >
             <Text style={styles.menuItemText}>Mis agendas</Text>

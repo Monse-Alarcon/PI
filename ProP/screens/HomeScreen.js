@@ -128,7 +128,13 @@ export default function HomeScreen({ navigation, currentUserId: currentUserIdPro
             <Text style={styles.menuItemText}>Inicio</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => setMenuOpen(false)}>
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('MiAgenda', { usuarioId: currentUserId });
+            }}
+          >
             <Text style={styles.menuItemText}>Mis agendas</Text>
           </TouchableOpacity>
 
