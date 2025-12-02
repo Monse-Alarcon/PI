@@ -85,8 +85,19 @@ export default function HomeScreen({ navigation, currentUserId: currentUserIdPro
     navigation.navigate('Tutores', { usuarioId: currentUserId });
   };
 
+  const handleTutorPress = (tutor) => {
+    navigation.navigate('PerfilTutor', {
+      tutorId: tutor.id,
+      usuarioId: currentUserId,
+    });
+  };
+
   const renderScoreCard = ({ item }) => (
-    <TouchableOpacity style={styles.scoreCard} activeOpacity={0.7}>
+    <TouchableOpacity 
+      style={styles.scoreCard} 
+      activeOpacity={0.7}
+      onPress={() => handleTutorPress(item)}
+    >
       <View style={styles.scoreContent}>
         <Text style={styles.scoreName}>{item.name}</Text>
         <Text style={styles.scoreSubject}>Materia: {item.subject}</Text>

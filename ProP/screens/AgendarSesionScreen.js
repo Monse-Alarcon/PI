@@ -65,12 +65,30 @@ export default function AgendarSesionScreen({ navigation, route }) {
         if (u) setUsuario(u);
       }
       
-      // Cargar todas las materias disponibles
-      const todasMaterias = await getAllMaterias();
-      setMaterias(todasMaterias);
+      // Verificar si hay tutor y materias preseleccionados desde el perfil
+      const tutorPreseleccionado = route?.params?.tutorPreseleccionado;
+      const materiasDisponibles = route?.params?.materiasDisponibles;
       
-      // Cargar todos los maestros
-      await cargarTodosLosMaestros();
+      if (tutorPreseleccionado && materiasDisponibles) {
+        // Si viene desde el perfil del tutor, usar solo las materias del tutor
+        setMaterias(materiasDisponibles);
+        setSelectedMaestro(tutorPreseleccionado);
+        
+        // Cargar el maestro con sus materias
+        const maestrosConMateriasData = [{
+          ...tutorPreseleccionado,
+          materias: materiasDisponibles
+        }];
+        setMaestrosConMaterias(maestrosConMateriasData);
+        setMaestrosFiltrados([tutorPreseleccionado]);
+      } else {
+        // Cargar todas las materias disponibles (comportamiento normal)
+        const todasMaterias = await getAllMaterias();
+        setMaterias(todasMaterias);
+        
+        // Cargar todos los maestros
+        await cargarTodosLosMaestros();
+      }
     } catch (error) {
       console.error('Error al cargar datos:', error);
     } finally {
