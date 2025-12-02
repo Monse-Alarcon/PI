@@ -73,7 +73,7 @@ export default function PerfilTutorScreen({ navigation, route }) {
   if (!tutor) {
     return (
       <View style={styles.container}>
-        <CustomHeader navigation={navigation} title="Perfil del Tutor" menuType="tutor" />
+        <CustomHeader navigation={navigation} title="Perfil del Tutor" menuType="tutor" showBackButton={true} />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>No se encontró el tutor</Text>
         </View>
@@ -83,7 +83,7 @@ export default function PerfilTutorScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="Perfil del Tutor" menuType="tutor" />
+      <CustomHeader navigation={navigation} title="Perfil del Tutor" menuType="tutor" showBackButton={true} />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Información del Tutor */}

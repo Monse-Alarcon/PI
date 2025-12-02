@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {View,Text,StyleSheet,ScrollView,TouchableOpacity,Image,ActivityIndicator,Alert,} from 'react-native';
+import CustomHeader from '../components/CustomHeader';
 import { getNotificacionesByUsuario, limpiarNotificaciones } from '../utils/database';
 
-export default function NotificacionesScreen({ navigation, route }) {
+export default function NotificacionesScreen({ navigation, route, userType = 'Tutorado' }) {
   const { usuarioId } = route?.params || {};
+  const menuType = userType === 'Tutor' ? 'tutor' : 'alumno';
   const [notificaciones, setNotificaciones] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -122,37 +124,7 @@ export default function NotificacionesScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      {/* Logo en la esquina superior */}
-      <TouchableOpacity 
-        style={styles.logoContainer}
-        onPress={handleGoBack}
-        activeOpacity={0.7}
-      >
-        <Image
-          source={require('../assets/LogoMenu.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.refreshButton}
-          onPress={cargarNotificaciones}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.refreshButtonText}>🔄</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notificaciones</Text>
-        <TouchableOpacity
-          style={styles.clearButton}
-          onPress={handleLimpiarNotificaciones}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.clearButtonText}>🗑️</Text>
-        </TouchableOpacity>
-      </View>
+      <CustomHeader navigation={navigation} title="Notificaciones" showBackButton={true} menuType={menuType} />
 
       {/* Lista de notificaciones */}
       <ScrollView

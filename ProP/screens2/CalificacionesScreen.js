@@ -61,7 +61,7 @@ export default function CalificacionesScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="Calificar" menuType="tutor" />
+      <CustomHeader navigation={navigation} title="Calificar" menuType="tutor" showBackButton={true} />
 
       {/* Botones de modo */}
       <View style={styles.modeSelector}>

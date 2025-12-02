@@ -12,6 +12,7 @@ import {
   Animated,
   TextInput,
 } from 'react-native';
+import CustomHeader from '../components/CustomHeader';
 import { getMaestros, getMateriasByMaestro, getCalificacionPromedioPorTutorMateria } from '../utils/database';
 
 const { width } = Dimensions.get('window');
@@ -224,19 +225,7 @@ export default function TutoresScreen({ navigation, route }) {
       </Animated.View>
 
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
-          <Image
-            source={require('../assets/LogoMenu.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backArrowButton}>
-          <Text style={styles.backArrowText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>TUTORES</Text>
-      </View>
+      <CustomHeader navigation={navigation} title="Tutores" showBackButton={true} />
 
       {/* Barra de búsqueda */}
       <View style={styles.searchContainer}>

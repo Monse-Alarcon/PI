@@ -124,23 +124,24 @@ export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!', m
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          {showBackButton ? (
+          <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
+            <Image
+              source={require('../assets/LogoMenu.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
+        {showBackButton && (
+          <View style={styles.backButtonContainer}>
             <TouchableOpacity
               onPress={handleBackPress}
               style={styles.backButton}
             >
               <Text style={styles.backButtonText}>← Atrás</Text>
             </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
-              <Image
-                source={require('../assets/LogoMenu.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+          </View>
+        )}
         <View style={styles.headerBottom}>
           <Text style={styles.headerTitle}>{title}</Text>
         </View>
@@ -166,6 +167,11 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     
   },
+  backButtonContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#8B4513',
+  },
   headerBottom: {
     alignItems: 'center',
     paddingBottom: 5,
@@ -186,9 +192,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   backButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#8B4513',
   },

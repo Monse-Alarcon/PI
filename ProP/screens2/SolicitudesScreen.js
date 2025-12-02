@@ -165,7 +165,7 @@ export default function SolicitudesScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="Solicitudes" menuType="tutor" />
+      <CustomHeader navigation={navigation} title="Solicitudes" menuType="tutor" showBackButton={true} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {sesionesParaMostrar.length === 0 ? (

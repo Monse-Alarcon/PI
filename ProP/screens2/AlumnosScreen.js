@@ -60,7 +60,7 @@ export default function AlumnosScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="Alumnos" menuType="tutor" />
+      <CustomHeader navigation={navigation} title="Alumnos" menuType="tutor" showBackButton={true} />
 
       {/* Search bar */}
       <View style={styles.searchContainer}>

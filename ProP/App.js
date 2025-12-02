@@ -143,6 +143,9 @@ export default function App() {
   if (currentScreen === 'signup') {
     return (
       <CuentaNuevaScreen
+        navigation={{
+          goBack: () => setCurrentScreen('login'),
+        }}
         onBack={() => setCurrentScreen('login')}
       />
     );
@@ -329,6 +332,7 @@ export default function App() {
           navigate: name => setCurrentScreen(String(name).toLowerCase()),
         }}
         route={{ params: { usuarioId: currentUserId || 1 } }}
+        userType={userType}
       />
     );
   }

@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
+import CustomHeader from '../components/CustomHeader';
 import { getSesionById, updateSesion } from '../utils/database';
 
 export default function AgendaEditar({ route, navigation }) {
@@ -68,12 +69,7 @@ export default function AgendaEditar({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation && navigation.navigate && navigation.navigate(previous)} style={styles.backButton}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Editar agenda</Text>
-      </View>
+      <CustomHeader navigation={navigation} title="Editar agenda" menuType="tutor" showBackButton={true} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>

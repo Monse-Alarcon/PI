@@ -48,7 +48,7 @@ export default function PerfilScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="Perfil" menuType="tutor" />
+      <CustomHeader navigation={navigation} title="Perfil" menuType="tutor" showBackButton={true} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.profileCard}>

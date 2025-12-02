@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import CustomHeader from '../components/CustomHeader';
 import { getUserById, updateUser } from '../utils/database';
 
 export default function EditarPerfilScreen({ route, navigation }) {
@@ -90,12 +91,7 @@ export default function EditarPerfilScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.menuButton}>
-          <Image source={require('../assets/LogoMenu.png')} style={styles.logo} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Editar Perfil</Text>
-      </View>
+      <CustomHeader navigation={navigation} title="Editar Perfil" showBackButton={true} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.avatarContainer}>

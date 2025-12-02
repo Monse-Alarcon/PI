@@ -431,6 +431,7 @@ export default function AgendarSesionScreen({ navigation, route }) {
         navigation={navigation} 
         title={isEditing ? 'Editar sesión' : 'Agendar sesión'}
         menuType="tutor"
+        showBackButton={true}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

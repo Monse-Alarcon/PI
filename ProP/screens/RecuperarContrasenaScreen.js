@@ -12,6 +12,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import CustomHeader from '../components/CustomHeader';
 import { getUserByEmail, updateUserPassword } from '../utils/database';
 
 export default function RecuperarContrasenaScreen({ navigation, route }) {
@@ -302,15 +303,8 @@ export default function RecuperarContrasenaScreen({ navigation, route }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <CustomHeader navigation={navigation} title="Recuperar Contraseña" showBackButton={true} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/CardinalLogo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
-
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}

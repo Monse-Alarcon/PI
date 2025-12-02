@@ -68,7 +68,7 @@ export default function TutoresScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="TUTORES" menuType="tutor" />
+      <CustomHeader navigation={navigation} title="TUTORES" menuType="tutor" showBackButton={true} />
 
       {/* Barra de búsqueda */}
       <View style={styles.searchContainer}>

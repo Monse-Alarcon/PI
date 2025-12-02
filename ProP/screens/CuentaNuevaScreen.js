@@ -12,9 +12,10 @@ import {
   Platform,
 } from 'react-native';
 
+import CustomHeader from '../components/CustomHeader';
 import { insertUser, getUserByEmail, insertMaestroMateria, getUserById } from '../utils/database';
 
-export default function CuentaNuevaScreen({ onBack }) {
+export default function CuentaNuevaScreen({ onBack, navigation }) {
   const [nombre, setNombre] = useState('');
   const [grupo, setGrupo] = useState('');
   const [matricula, setMatricula] = useState('');
@@ -145,14 +146,8 @@ export default function CuentaNuevaScreen({ onBack }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <CustomHeader navigation={navigation} title="Crear Cuenta Nueva" showBackButton={true} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/CardinalLogo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
 
         <Text style={styles.title}>Crear cuenta nueva</Text>
 

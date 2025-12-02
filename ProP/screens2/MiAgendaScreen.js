@@ -135,7 +135,7 @@ export default function MiAgendaScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader navigation={navigation} title="Mi agenda" menuType="tutor" />
+      <CustomHeader navigation={navigation} title="Mi agenda" menuType="tutor" showBackButton={true} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {sesiones.length === 0 ? (
