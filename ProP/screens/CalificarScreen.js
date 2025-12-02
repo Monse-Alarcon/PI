@@ -6,23 +6,28 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  TextInput,
   Alert,
-  ActivityIndicator,
-  Animated,
   Dimensions,
+  Animated,
 } from 'react-native';
-import { getUserById } from '../utils/database';
+import { getUserById, insertCalificacion } from '../utils/database';
 
 const { width } = Dimensions.get('window');
 
-export default function PerfilScreen({ route, navigation }) {
-  const [loading, setLoading] = useState(false);
-  const [usuario, setUsuario] = useState(null);
+export default function CalificarScreen({ navigation, route }) {
+  const [calificacion, setCalificacion] = useState(0);
+  const [comentario, setComentario] = useState('');
+  const [persona, setPersona] = useState(null);
+  const [tipoPersona, setTipoPersona] = useState(null); // 'tutor' o 'alumno'
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuAnimation] = useState(new Animated.Value(-width * 0.7));
+  const currentUserId = route?.params?.usuarioId || navigation?.currentUserId;
+  const personaId = route?.params?.personaId;
+  const esTutor = route?.params?.esTutor;
 
   useEffect(() => {
-    cargarUsuario();
+    cargarPersona();
   }, []);
 
   const toggleMenu = () => {
@@ -43,27 +48,79 @@ export default function PerfilScreen({ route, navigation }) {
     }
   };
 
-  const cargarUsuario = async () => {
+  const cargarPersona = async () => {
     try {
-      setLoading(true);
-      const usuarioId = route?.params?.usuarioId || 1;
-      const u = await getUserById(usuarioId);
-      if (u) setUsuario(u);
+      if (personaId) {
+        const p = await getUserById(personaId);
+        if (p) {
+          setPersona(p);
+          setTipoPersona(esTutor ? 'tutor' : 'alumno');
+        }
+      }
     } catch (error) {
-      console.error('Error al cargar usuario:', error);
-      Alert.alert('Error', 'No se pudieron cargar los datos del usuario');
-    } finally {
-      setLoading(false);
+      console.error('Error al cargar persona:', error);
+      Alert.alert('Error', 'No se pudo cargar la información de la persona');
     }
   };
 
-  if (loading && !usuario) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8B4513" />
-      </View>
-    );
-  }
+  const handleStarPress = (rating) => {
+    setCalificacion(rating);
+  };
+
+  const handleEnviar = async () => {
+    if (calificacion === 0) {
+      Alert.alert('Error', 'Por favor selecciona una calificación');
+      return;
+    }
+
+    if (!personaId || !currentUserId) {
+      Alert.alert('Error', 'Faltan datos necesarios');
+      return;
+    }
+
+    try {
+      await insertCalificacion({
+        tutorId: esTutor ? personaId : null,
+        alumnoId: !esTutor ? personaId : null,
+        materia: null,
+        calificacion: calificacion,
+        comentario: comentario.trim() || null,
+        usuarioId: currentUserId,
+      });
+
+      Alert.alert(
+        'Éxito',
+        'Calificación enviada correctamente',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Error al enviar calificación:', error);
+      Alert.alert('Error', 'No se pudo enviar la calificación');
+    }
+  };
+
+  const renderStars = () => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <TouchableOpacity
+          key={i}
+          onPress={() => handleStarPress(i)}
+          style={styles.starButton}
+        >
+          <Text style={[styles.star, calificacion >= i && styles.starFilled]}>
+            {calificacion >= i ? '⭐' : '☆'}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+    return stars;
+  };
 
   return (
     <View style={styles.container}>
@@ -86,8 +143,8 @@ export default function PerfilScreen({ route, navigation }) {
         ]}
       >
         <View style={styles.drawerContent}>
-          <View style={styles.profileSectionDrawer}>
-            <View style={styles.profileIconDrawer}>
+          <View style={styles.profileSection}>
+            <View style={styles.profileIcon}>
               <Text style={styles.profileText}>👤</Text>
             </View>
             <Text style={styles.profileLabel}>Usuario</Text>
@@ -107,8 +164,7 @@ export default function PerfilScreen({ route, navigation }) {
             style={styles.menuItem}
             onPress={() => {
               setMenuOpen(false);
-              const usuarioId = route?.params?.usuarioId || 1;
-              navigation.navigate('MiAgenda', { usuarioId });
+              navigation.navigate('MiAgenda', { usuarioId: currentUserId });
             }}
           >
             <Text style={styles.menuItemText}>Mis agendas</Text>
@@ -118,8 +174,7 @@ export default function PerfilScreen({ route, navigation }) {
             style={styles.menuItem}
             onPress={() => {
               setMenuOpen(false);
-              const usuarioId = route?.params?.usuarioId || 1;
-              navigation.navigate('Tutores', { usuarioId });
+              navigation.navigate('Tutores', { usuarioId: currentUserId });
             }}
           >
             <Text style={styles.menuItemText}>Tutores</Text>
@@ -153,7 +208,7 @@ export default function PerfilScreen({ route, navigation }) {
         </View>
       </Animated.View>
 
-      {/* Header with bird (left) */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
           <Image
@@ -162,47 +217,53 @@ export default function PerfilScreen({ route, navigation }) {
             resizeMode="contain"
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Perfil</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backArrowButton}>
+          <Text style={styles.backArrowText}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Califica a tu tutor o alumno</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarEmoji}>👤</Text>
+        {/* Instruction Text */}
+        <Text style={styles.instructionText}>
+          Selecciona las estrellitas que consideras que califican a este {tipoPersona === 'tutor' ? 'profesor' : 'alumno'}
+        </Text>
+
+        {/* Person Name */}
+        {persona && (
+          <View style={styles.nameContainer}>
+            <Text style={styles.personName}>{persona.name}</Text>
           </View>
+        )}
 
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => {
-              const id = usuario?.id || route?.params?.usuarioId || 1;
-              navigation.navigate('EditarPerfil', { usuarioId: id });
-            }}
-          >
-            <Text style={styles.editIcon}>✏️</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.nameText}>
-            {usuario ? usuario.name : '—'}
-          </Text>
-          <Text style={styles.roleText}>{usuario?.userType || '—'}</Text>
-
-          <View style={styles.infoBox}>
-            <Text style={styles.infoLabel}>Correo</Text>
-            <Text style={styles.infoValue}>{usuario?.email || '—'}</Text>
-
-            <Text style={[styles.infoLabel, { marginTop: 12 }]}>Celular</Text>
-            <Text style={styles.infoValue}>{usuario?.phone || '—'}</Text>
-
-              <Text style={[styles.infoLabel, { marginTop: 12 }]}>Grupo</Text>
-              <Text style={styles.infoValue}>{usuario?.grupo || usuario?.grupo || '—'}</Text>
-
-              <Text style={[styles.infoLabel, { marginTop: 12 }]}>Matrícula</Text>
-              <Text style={styles.infoValue}>{usuario?.matricula || usuario?.matricula || '—'}</Text>
-
-              <Text style={[styles.infoLabel, { marginTop: 12 }]}>Edificio</Text>
-              <Text style={styles.infoValue}>{usuario?.edificio || '—'}</Text>
-          </View>
+        {/* Stars Rating */}
+        <View style={styles.starsContainer}>
+          {renderStars()}
         </View>
+
+        {/* Comment Section */}
+        <View style={styles.commentSection}>
+          <Text style={styles.commentLabel}>Comentario:</Text>
+          <TextInput
+            style={styles.commentInput}
+            placeholder="Escribe tu opinión aquí..."
+            placeholderTextColor="#A0826D"
+            value={comentario}
+            onChangeText={setComentario}
+            multiline={true}
+            numberOfLines={6}
+            textAlignVertical="top"
+          />
+        </View>
+
+        {/* Submit Button */}
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleEnviar}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.submitButtonText}>Enviar reseña</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -213,17 +274,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5E6D3',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5E6D3',
-  },
   header: {
     backgroundColor: '#8B4513',
     paddingTop: 18,
     paddingBottom: 22,
     paddingHorizontal: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -234,76 +290,99 @@ const styles = StyleSheet.create({
     top: 8,
     zIndex: 40,
   },
+  backArrowButton: {
+    position: 'absolute',
+    right: 12,
+    top: 18,
+    zIndex: 40,
+    padding: 8,
+  },
+  backArrowText: {
+    fontSize: 28,
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
   logo: {
     width: 60,
     height: 60,
   },
   headerTitle: {
-    color: '#FFF',
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#FFF',
+    textAlign: 'center',
+    paddingHorizontal: 60,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  profileCard: {
-    alignItems: 'center',
-    backgroundColor: '#D4AF9F',
+    paddingHorizontal: 20,
     paddingVertical: 24,
-    borderRadius: 12,
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#8B5A3C',
+  instructionText: {
+    fontSize: 14,
+    color: '#8B4513',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  nameContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 24,
   },
-  avatarEmoji: {
-    fontSize: 48,
-  },
-  editButton: {
-    position: 'absolute',
-    right: '5%',
-    top: 90,
-    backgroundColor: '#FFFFFFAA',
-    padding: 6,
-    borderRadius: 20,
-  },
-  editIcon: {
-    fontSize: 18,
-  },
-  nameText: {
-    fontSize: 18,
+  personName: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: '#8B4513',
   },
-  roleText: {
-    fontSize: 14,
-    color: '#FFF',
+  starsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginBottom: 32,
+    gap: 12,
+  },
+  starButton: {
+    padding: 8,
+  },
+  star: {
+    fontSize: 40,
+    color: '#D4AF9F',
+  },
+  starFilled: {
+    color: '#FFD700',
+  },
+  commentSection: {
+    marginBottom: 24,
+  },
+  commentLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8B4513',
     marginBottom: 12,
-    fontStyle: 'italic',
   },
-  infoBox: {
-    backgroundColor: '#A0634A',
-    marginTop: 12,
-    padding: 16,
+  commentInput: {
+    backgroundColor: '#8B3A3A',
     borderRadius: 12,
-    width: '90%',
-  },
-  infoLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+    padding: 16,
+    fontSize: 16,
     color: '#FFF',
+    minHeight: 120,
+    textAlignVertical: 'top',
   },
-  infoValue: {
-    fontSize: 14,
+  submitButton: {
+    backgroundColor: '#8B4513',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    marginBottom: 32,
+    alignSelf: 'flex-end',
+    minWidth: 150,
+  },
+  submitButtonText: {
     color: '#FFF',
-    marginTop: 4,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   drawer: {
     position: 'absolute',
@@ -319,14 +398,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
-  profileSectionDrawer: {
+  profileSection: {
     alignItems: 'center',
     marginBottom: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#A0826D',
   },
-  profileIconDrawer: {
+  profileIcon: {
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -380,3 +459,4 @@ const styles = StyleSheet.create({
     zIndex: 99,
   },
 });
+
