@@ -612,6 +612,50 @@ export function getSesionesByUsuario(usuarioId) {
   });
 }
 
+// Obtener sesiones por tutor (para ver solicitudes recibidas por un tutor)
+export function getSesionesByTutor(tutorId) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'SELECT * FROM sesiones WHERE tutorId = ? ORDER BY fecha ASC, hora ASC;',
+          [tutorId],
+          (_, result) => {
+            const sesiones = [];
+            for (let i = 0; i < result.rows.length; i++) {
+              sesiones.push(result.rows.item(i));
+            }
+            resolve(sesiones);
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  // AsyncStorage/Web fallback
+  return new Promise(async (resolve, reject) => {
+    try {
+      const storage = hasAsyncStorage && Platform.OS !== 'web' ? AsyncStorage : getStorage();
+      const raw = Platform.OS === 'web' 
+        ? storage.getItem('sesiones') || '[]'
+        : (await storage.getItem('sesiones')) || '[]';
+      const arr = JSON.parse(raw);
+      const sesiones = arr.filter(s => Number(s.tutorId) === Number(tutorId));
+      resolve(sesiones.sort((a, b) => {
+        const dateA = new Date(a.fecha);
+        const dateB = new Date(b.fecha);
+        return dateA - dateB;
+      }));
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 export function getSesionById(sesionId) {
   if (usingSQLite && db) {
     return new Promise((resolve, reject) => {

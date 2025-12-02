@@ -29,7 +29,7 @@ export default function HomeTutorado({ navigation, currentUserId: currentUserIdP
   };
 
   const handleSolicitudes = () => {
-    navigation.navigate('Solicitudes', { usuarioId: currentUserId });
+    navigation.navigate('Solicitudes', { usuarioId: currentUserId, mostrarTodas: true });
   };
 
   const handlePerfil = () => {

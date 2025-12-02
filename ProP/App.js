@@ -16,6 +16,7 @@ import NotificacionesScreen from './screens/NotificacionesScreen';
 import RecuperarContrasenaScreen from './screens/RecuperarContrasenaScreen';
 import TutoresScreen from './screens/TutoresScreen';
 import CalificarScreen from './screens/CalificarScreen';
+import SolicitudesScreen from './screens/SolicitudesScreen';
 import PerfilTutorScreen from './screens/PerfilTutorScreen';
 
 export default function App() {
@@ -308,6 +309,31 @@ export default function App() {
           },
         }}
         route={{ params: { usuarioId: params.usuarioId || currentUserId || 1 } }}
+      />
+    );
+  }
+
+  // solicitudes (para tutores)
+  if (currentScreen === 'solicitudes') {
+    const params = screenParams['solicitudes'] || {};
+
+    return (
+      <SolicitudesScreen
+        navigation={{
+          goBack: () => {
+            setScreenParams({});
+            setCurrentScreen('home');
+          },
+          navigate: (name, navParams) => {
+            const screenName = String(name).toLowerCase();
+            if (navParams) {
+              setScreenParams({ [screenName]: navParams });
+            }
+            setCurrentScreen(screenName);
+          },
+          currentUserId,
+        }}
+        route={{ params }}
       />
     );
   }
