@@ -78,7 +78,7 @@ export default function HomeScreen({ navigation, currentUserId: currentUserIdPro
   };
 
   const handleTutors = () => {
-    Alert.alert('Tutores', 'Ver lista de tutores disponibles');
+    navigation.navigate('Tutores', { usuarioId: currentUserId });
   };
 
   const renderScoreCard = ({ item }) => (
@@ -138,7 +138,13 @@ export default function HomeScreen({ navigation, currentUserId: currentUserIdPro
             <Text style={styles.menuItemText}>Mis agendas</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => setMenuOpen(false)}>
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            onPress={() => {
+              setMenuOpen(false);
+              navigation.navigate('Tutores', { usuarioId: currentUserId });
+            }}
+          >
             <Text style={styles.menuItemText}>Tutores</Text>
           </TouchableOpacity>
 

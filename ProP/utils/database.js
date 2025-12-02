@@ -917,7 +917,28 @@ export function initMaestroMateriasTable() {
             FOREIGN KEY (maestroId) REFERENCES users(id)
           );`,
           [],
-          () => resolve(true),
+          () => {
+            // Crear tabla de calificaciones
+            tx.executeSql(
+              `CREATE TABLE IF NOT EXISTS calificaciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tutorId INTEGER NOT NULL,
+                materia TEXT NOT NULL,
+                calificacion REAL NOT NULL,
+                comentario TEXT,
+                usuarioId INTEGER,
+                createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tutorId) REFERENCES users(id),
+                FOREIGN KEY (usuarioId) REFERENCES users(id)
+              );`,
+              [],
+              () => resolve(true),
+              (_, err) => {
+                reject(err);
+                return false;
+              }
+            );
+          },
           (_, err) => {
             reject(err);
             return false;
@@ -1135,6 +1156,86 @@ export function getAllMaterias() {
   });
 }
 
+export function getAlumnos() {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          "SELECT * FROM users WHERE userType IN ('Tutorado', 'Alumno', 'Estudiante');",
+          [],
+          (_, result) => {
+            const alumnos = [];
+            for (let i = 0; i < result.rows.length; i++) {
+              alumnos.push(result.rows.item(i));
+            }
+            resolve(alumnos);
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  // AsyncStorage/Web fallback
+  return new Promise(async (resolve, reject) => {
+    try {
+      const storage = hasAsyncStorage && Platform.OS !== 'web' ? AsyncStorage : getStorage();
+      const raw = Platform.OS === 'web' 
+        ? storage.getItem('users') || '[]'
+        : (await storage.getItem('users')) || '[]';
+      const arr = JSON.parse(raw);
+      const alumnos = arr.filter(u => 
+        u.userType === 'Tutorado' || u.userType === 'Alumno' || u.userType === 'Estudiante'
+      );
+      resolve(alumnos);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+export function obtenerTodosLosUsuarios() {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'SELECT * FROM users ORDER BY name;',
+          [],
+          (_, result) => {
+            const usuarios = [];
+            for (let i = 0; i < result.rows.length; i++) {
+              usuarios.push(result.rows.item(i));
+            }
+            resolve(usuarios);
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  // AsyncStorage/Web fallback
+  return new Promise(async (resolve, reject) => {
+    try {
+      const storage = hasAsyncStorage && Platform.OS !== 'web' ? AsyncStorage : getStorage();
+      const raw = Platform.OS === 'web' 
+        ? storage.getItem('users') || '[]'
+        : (await storage.getItem('users')) || '[]';
+      const arr = JSON.parse(raw);
+      arr.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      resolve(arr);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 export async function seedMaestrosAndMaterias() {
   try {
     // Crear algunos maestros de ejemplo
@@ -1202,6 +1303,323 @@ export async function seedMaestrosAndMaterias() {
   } catch (err) {
     console.log('seed maestros error', err);
   }
+}
+
+// ========== CALIFICACIONES FUNCTIONS ==========
+
+function _webInitCalificaciones() {
+  if (!storage.getItem('calificaciones')) {
+    storage.setItem('calificaciones', JSON.stringify([]));
+  }
+  return Promise.resolve(true);
+}
+
+async function _asyncInitCalificaciones() {
+  try {
+    const raw = await AsyncStorage.getItem('calificaciones');
+    if (!raw) {
+      await AsyncStorage.setItem('calificaciones', JSON.stringify([]));
+    }
+    return true;
+  } catch (err) {
+    console.warn('_asyncInitCalificaciones error', err);
+    return false;
+  }
+}
+
+export function initCalificacionesTable() {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          `CREATE TABLE IF NOT EXISTS calificaciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tutorId INTEGER,
+            alumnoId INTEGER,
+            materia TEXT,
+            calificacion REAL NOT NULL,
+            comentario TEXT,
+            usuarioId INTEGER,
+            createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (tutorId) REFERENCES users(id),
+            FOREIGN KEY (alumnoId) REFERENCES users(id),
+            FOREIGN KEY (usuarioId) REFERENCES users(id)
+          );`,
+          [],
+          () => resolve(true),
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  if (hasAsyncStorage && Platform.OS !== 'web') {
+    return _asyncInitCalificaciones();
+  }
+
+  return _webInitCalificaciones();
+}
+
+export function getCalificacionPromedioPorTutorMateria(tutorId, materia) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'SELECT AVG(calificacion) as promedio FROM calificaciones WHERE tutorId = ? AND materia = ?;',
+          [tutorId, materia],
+          (_, result) => {
+            if (result.rows.length > 0) {
+              const promedio = result.rows.item(0).promedio;
+              resolve(promedio ? parseFloat(promedio.toFixed(1)) : 0);
+            } else {
+              resolve(0);
+            }
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  // AsyncStorage/Web fallback
+  return new Promise(async (resolve, reject) => {
+    try {
+      const storage = hasAsyncStorage && Platform.OS !== 'web' ? AsyncStorage : getStorage();
+      const raw = Platform.OS === 'web' 
+        ? storage.getItem('calificaciones') || '[]'
+        : (await storage.getItem('calificaciones')) || '[]';
+      const arr = JSON.parse(raw);
+      const calificaciones = arr.filter(c => 
+        Number(c.tutorId) === Number(tutorId) && c.materia === materia
+      );
+      if (calificaciones.length === 0) {
+        resolve(0);
+      } else {
+        const suma = calificaciones.reduce((acc, c) => acc + Number(c.calificacion), 0);
+        const promedio = suma / calificaciones.length;
+        resolve(parseFloat(promedio.toFixed(1)));
+      }
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+export function getCalificacionPromedioPorTutor(tutorId) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'SELECT AVG(calificacion) as promedio FROM calificaciones WHERE tutorId = ?;',
+          [tutorId],
+          (_, result) => {
+            if (result.rows.length > 0) {
+              const promedio = result.rows.item(0).promedio;
+              resolve(promedio ? parseFloat(promedio.toFixed(1)) : 0);
+            } else {
+              resolve(0);
+            }
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  // AsyncStorage/Web fallback
+  return new Promise(async (resolve, reject) => {
+    try {
+      const storage = hasAsyncStorage && Platform.OS !== 'web' ? AsyncStorage : getStorage();
+      const raw = Platform.OS === 'web' 
+        ? storage.getItem('calificaciones') || '[]'
+        : (await storage.getItem('calificaciones')) || '[]';
+      const arr = JSON.parse(raw);
+      const calificaciones = arr.filter(c => Number(c.tutorId) === Number(tutorId));
+      if (calificaciones.length === 0) {
+        resolve(0);
+      } else {
+        const suma = calificaciones.reduce((acc, c) => acc + Number(c.calificacion), 0);
+        const promedio = suma / calificaciones.length;
+        resolve(parseFloat(promedio.toFixed(1)));
+      }
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+export async function seedAlumnos() {
+  try {
+    const alumnos = [
+      {
+        name: 'Daniela López Pacheco',
+        email: 'daniela.lopez@upq.edu.mx',
+        phone: '4421111111',
+        password: '12345678',
+        userType: 'Tutorado',
+        edificio: 'D205',
+        grupo: 'A',
+        matricula: '12345678',
+      },
+      {
+        name: 'Santiago Hernández García',
+        email: 'santiago.hernandez@upq.edu.mx',
+        phone: '4422222222',
+        password: '12345678',
+        userType: 'Tutorado',
+        edificio: 'D206',
+        grupo: 'B',
+        matricula: '12345679',
+      },
+      {
+        name: 'Sofia Martinez López',
+        email: 'sofia.martinez@upq.edu.mx',
+        phone: '4423333333',
+        password: '12345678',
+        userType: 'Tutorado',
+        edificio: 'D207',
+        grupo: 'A',
+        matricula: '12345680',
+      },
+    ];
+
+    for (const alumno of alumnos) {
+      const existing = await getUserByEmail(alumno.email);
+      if (!existing) {
+        await insertUser(alumno);
+      }
+    }
+  } catch (err) {
+    console.log('seed alumnos error', err);
+  }
+}
+
+export async function seedCalificaciones() {
+  try {
+    // Obtener todos los maestros
+    const maestros = await getMaestros();
+    
+    // Calificaciones de ejemplo por tutor y materia
+    const calificacionesEjemplo = [
+      { tutorEmail: 'luis.barron@upq.edu.mx', materia: 'Programacion', calificacion: 4.5 },
+      { tutorEmail: 'luis.barron@upq.edu.mx', materia: 'Estructuras de Datos', calificacion: 4.0 },
+      { tutorEmail: 'luis.barron@upq.edu.mx', materia: 'Algoritmos', calificacion: 4.2 },
+      { tutorEmail: 'maria.gonzalez@upq.edu.mx', materia: 'Cálculo Integral', calificacion: 4.2 },
+      { tutorEmail: 'maria.gonzalez@upq.edu.mx', materia: 'Álgebra Lineal', calificacion: 4.0 },
+      { tutorEmail: 'carlos.ramirez@upq.edu.mx', materia: 'Programacion', calificacion: 3.5 },
+      { tutorEmail: 'carlos.ramirez@upq.edu.mx', materia: 'Base de Datos', calificacion: 4.0 },
+    ];
+
+    for (const cal of calificacionesEjemplo) {
+      const tutor = maestros.find(m => m.email === cal.tutorEmail);
+      if (tutor) {
+        await insertCalificacion({
+          tutorId: tutor.id,
+          alumnoId: null,
+          materia: cal.materia,
+          calificacion: cal.calificacion,
+          usuarioId: null,
+        });
+      }
+    }
+  } catch (err) {
+    console.log('seed calificaciones error', err);
+  }
+}
+
+function _webInsertCalificacion({ tutorId, alumnoId, materia, calificacion, comentario, usuarioId }) {
+  return new Promise((resolve, reject) => {
+    try {
+      const raw = storage.getItem('calificaciones') || '[]';
+      const arr = JSON.parse(raw);
+      const id = (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
+      const item = {
+        id,
+        tutorId: tutorId ? Number(tutorId) : null,
+        alumnoId: alumnoId ? Number(alumnoId) : null,
+        materia: materia || null,
+        calificacion: Number(calificacion),
+        comentario: comentario || null,
+        usuarioId: usuarioId ? Number(usuarioId) : null,
+        createdAt: new Date().toISOString(),
+      };
+      arr.push(item);
+      storage.setItem('calificaciones', JSON.stringify(arr));
+      resolve(item);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+async function _asyncInsertCalificacion({ tutorId, alumnoId, materia, calificacion, comentario, usuarioId }) {
+  try {
+    const raw = (await AsyncStorage.getItem('calificaciones')) || '[]';
+    const arr = JSON.parse(raw);
+    const id = (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
+    const item = {
+      id,
+      tutorId: tutorId ? Number(tutorId) : null,
+      alumnoId: alumnoId ? Number(alumnoId) : null,
+      materia: materia || null,
+      calificacion: Number(calificacion),
+      comentario: comentario || null,
+      usuarioId: usuarioId ? Number(usuarioId) : null,
+      createdAt: new Date().toISOString(),
+    };
+    arr.push(item);
+    await AsyncStorage.setItem('calificaciones', JSON.stringify(arr));
+    return item;
+  } catch (err) {
+    throw err;
+  }
+}
+
+export function insertCalificacion({ tutorId, alumnoId, materia, calificacion, comentario, usuarioId }) {
+  if (usingSQLite && db) {
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          'INSERT INTO calificaciones (tutorId, alumnoId, materia, calificacion, comentario, usuarioId) VALUES (?, ?, ?, ?, ?, ?);',
+          [tutorId || null, alumnoId || null, materia || null, calificacion, comentario || null, usuarioId || null],
+          (_, result) => {
+            tx.executeSql(
+              'SELECT * FROM calificaciones WHERE id = ?;',
+              [result.insertId],
+              (_, result2) => {
+                if (result2.rows.length > 0) {
+                  resolve(result2.rows.item(0));
+                } else {
+                  resolve(result);
+                }
+              },
+              (_, err) => {
+                resolve(result);
+              }
+            );
+          },
+          (_, err) => {
+            reject(err);
+            return false;
+          }
+        );
+      });
+    });
+  }
+
+  if (hasAsyncStorage && Platform.OS !== 'web') {
+    return _asyncInsertCalificacion({ tutorId, alumnoId, materia, calificacion, comentario, usuarioId });
+  }
+  return _webInsertCalificacion({ tutorId, alumnoId, materia, calificacion, comentario, usuarioId });
 }
 
 export default db;
