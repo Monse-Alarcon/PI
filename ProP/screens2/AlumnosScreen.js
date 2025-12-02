@@ -66,8 +66,8 @@ export default function AlumnosScreen({ navigation }) {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Buscar alumno por nombre, correo o matrícula..."
-          placeholderTextColor="#999"
+          placeholder="Busca un alumno"
+          placeholderTextColor="#A0826D"
           value={searchText}
           onChangeText={filtrar}
         />
@@ -126,6 +126,40 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#8B4513',
+  },
+  searchContainer: {
+    backgroundColor: '#FFF',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#8B4513',
+    paddingVertical: 0,
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  clearText: {
+    fontSize: 20,
+    color: '#A0826D',
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,
