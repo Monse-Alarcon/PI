@@ -13,12 +13,12 @@ const { width } = Dimensions.get('window');
 
 export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!' }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuAnimation] = useState(new Animated.Value(-width * 0.7));
+  const [menuAnimation] = useState(new Animated.Value(-width * 0.75));
 
   const toggleMenu = () => {
     if (menuOpen) {
       Animated.timing(menuAnimation, {
-        toValue: -width * 0.7,
+        toValue: -width * 0.75,
         duration: 300,
         useNativeDriver: false,
       }).start();
@@ -67,7 +67,7 @@ export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!' })
               onPress={() => {
                 setMenuOpen(false);
                 Animated.timing(menuAnimation, {
-                  toValue: -width * 0.7,
+                  toValue: -width * 0.75,
                   duration: 300,
                   useNativeDriver: false,
                 }).start(() => {
@@ -98,14 +98,18 @@ export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!' })
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
-          <Image
-            source={require('../assets/LogoMenu.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{title}</Text>
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
+            <Image
+              source={require('../assets/LogoMenu.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.headerBottom}>
+          <Text style={styles.headerTitle}>{title}</Text>
+        </View>
       </View>
     </>
   );
@@ -114,36 +118,47 @@ export default function CustomHeader({ navigation, title = '¡HOLA CARDENAL!' })
 const styles = StyleSheet.create({
   header: {
     backgroundColor: '#8B4513',
-    paddingTop: 18,
-    paddingBottom: 30,
+    paddingTop: 10,
+    paddingBottom: 0,
     paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     position: 'relative',
     zIndex: 1,
+    
+    
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginBottom: 5,
+    
+  },
+  headerBottom: {
+    alignItems: 'center',
+    paddingBottom: 5,
+    backgroundColor: '#F5E6D3',
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    paddingTop: 20,
   },
   menuButton: {
-    position: 'absolute',
-    left: 16,
-    top: 1,
-    zIndex: 40,
+    zIndex: 30,
+    flexDirection: 'row',
   },
   logo: {
-    width: 90,
-    height: 90,
+    width: 100,
+    height: 100,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: '#8B4513',
     textAlign: 'center',
   },
   drawer: {
     position: 'absolute',
     left: 0,
     top: 0,
-    width: width * 0.7,
+    width: width * 0.75,
     height: '100%',
     backgroundColor: '#8B4513',
     zIndex: 100,
