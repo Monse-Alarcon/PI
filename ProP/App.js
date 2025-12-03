@@ -230,7 +230,9 @@ export default function App() {
   if (currentScreen === 'agendarsesion') {
     const params = screenParams['agendarsesion'] || {};
     const previousScreen = params.previousScreen || 'home';
-    const AgendarSesionComponent = userType === 'Tutor' ? AgendarSesionScreenTutor : AgendarSesionScreen;
+    // Allow callers to force the student (screens/) component by passing `forceStudent: true`
+    const forceStudent = params.forceStudent === true;
+    const AgendarSesionComponent = forceStudent ? AgendarSesionScreen : (userType === 'Tutor' ? AgendarSesionScreenTutor : AgendarSesionScreen);
     
     return (
       <AgendarSesionComponent
@@ -243,7 +245,13 @@ export default function App() {
               setMiAgendaRefreshKey(prev => prev + 1);
             }
           },
-          navigate: name => setCurrentScreen(String(name).toLowerCase()),
+          navigate: (name, navParams) => {
+            const screenName = String(name).toLowerCase();
+            if (navParams) {
+              setScreenParams({ [screenName]: navParams });
+            }
+            setCurrentScreen(screenName);
+          },
         }}
         route={{ params: { usuarioId: params.usuarioId || currentUserId || 1, sesionEdit: params.sesionEdit } }}
       />

@@ -90,9 +90,9 @@ export default function MiAgendaScreen({ navigation, route }) {
   };
 
   const handleEditar = (sesion) => {
-    // Navegar a la pantalla de edición de agenda
+    // Navegar a la pantalla de agendar sesión con los datos de la sesión para editar
     if (navigation && navigation.navigate) {
-      navigation.navigate('AgendaEditar', { sesionId: sesion.id, previousScreen: 'miagenda' });
+      navigation.navigate('AgendarSesion', { sesionEdit: sesion, previousScreen: 'miagenda', usuarioId: currentUserId, forceStudent: true });
     }
   };
 
