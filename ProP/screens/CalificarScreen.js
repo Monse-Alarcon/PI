@@ -72,18 +72,32 @@ export default function CalificarScreen({ navigation, route }) {
         usuarioId: currentUserId,
       });
 
-      // Crear notificación para el tutor cuando recibe una calificación
-      if (esTutor && personaId) {
+      // Crear notificación para la persona calificada (tutor o alumno)
+      if (personaId) {
         const calificador = await getUserById(currentUserId);
-        const nombreCalificador = calificador?.name || 'Un alumno';
+        const nombreCalificador = calificador?.name || 'Alguien';
         const estrellas = '⭐'.repeat(calificacion);
-        
+
         await insertNotificacion({
           usuarioId: personaId,
           tipo: 'calificacion',
           titulo: 'Nueva Calificación Recibida',
-          descripcion: `${nombreCalificador} calificó tu perfil${materia ? ` por la materia de ${materia}` : ''} con ${calificacion} ${calificacion === 1 ? 'estrella' : 'estrellas'} ${estrellas}`,
+          descripcion: `${nombreCalificador} te calificó${materia ? ` en ${materia}` : ''} con ${calificacion} ${calificacion === 1 ? 'estrella' : 'estrellas'} ${estrellas}`,
         });
+      }
+
+      // Crear notificación de confirmación para quien calificó
+      try {
+        const calificador = await getUserById(currentUserId);
+        const nombreCalificado = persona?.name || 'la persona';
+        await insertNotificacion({
+          usuarioId: currentUserId,
+          tipo: 'calificacion_enviada',
+          titulo: 'Calificación enviada',
+          descripcion: `Has calificado a ${nombreCalificado} con ${calificacion} ${calificacion === 1 ? 'estrella' : 'estrellas'}`,
+        });
+      } catch (err) {
+        console.warn('Error insertando notificación de confirmación del calificador:', err);
       }
 
       Alert.alert(

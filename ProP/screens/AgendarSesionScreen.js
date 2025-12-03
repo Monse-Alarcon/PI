@@ -11,7 +11,7 @@ import {
   Animated,
 } from 'react-native';
 import { getUserById } from '../utils/database';
-import { insertSesion, updateSesion, getMaestros, getMateriasByMaestro, getAllMaterias, getMaestrosByMateria, verificarSesionExistente } from '../utils/database';
+import { insertSesion, updateSesion, getMaestros, getMateriasByMaestro, getAllMaterias, getMaestrosByMateria, verificarSesionExistente, insertNotificacion } from '../utils/database';
 import CustomHeader from '../components/CustomHeader';
 
 const { width } = Dimensions.get('window');
@@ -354,25 +354,53 @@ export default function AgendarSesionScreen({ navigation, route }) {
         );
       } else {
         // Crear nueva sesión
-        await insertSesion({
-          usuarioId: currentUserId,
-          tutorId: selectedMaestro.id,
-          materia: selectedMateria,
-          fecha: fechaHora.toISOString(),
-          hora: selectedTime,
-          estado: 'pendiente',
-        });
+          const nuevaSesion = await insertSesion({
+            usuarioId: currentUserId,
+            tutorId: selectedMaestro.id,
+            materia: selectedMateria,
+            fecha: fechaHora.toISOString(),
+            hora: selectedTime,
+            estado: 'pendiente',
+          });
 
-        Alert.alert(
-          'Éxito',
-          'Sesión agendada correctamente',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.goBack(),
-            },
-          ]
-        );
+          // Notificar al tutor sobre la nueva solicitud
+          try {
+            const alumno = usuario || (currentUserId ? await getUserById(currentUserId) : null);
+            const nombreAlumno = alumno?.name || 'Un alumno';
+            const fechaFormateada = new Date(nuevaSesion.fecha).toLocaleDateString();
+
+            if (nuevaSesion.tutorId) {
+              await insertNotificacion({
+                usuarioId: nuevaSesion.tutorId,
+                tipo: 'nueva_solicitud',
+                titulo: `Nueva solicitud de ${nombreAlumno}`,
+                descripcion: `${nombreAlumno} solicitó una tutoría de ${nuevaSesion.materia} para el ${fechaFormateada} a las ${nuevaSesion.hora}`,
+              });
+            }
+
+            // Notificación de confirmación al alumno
+            if (currentUserId) {
+              await insertNotificacion({
+                usuarioId: currentUserId,
+                tipo: 'solicitud_enviada',
+                titulo: 'Solicitud enviada',
+                descripcion: `Se envió la solicitud de tutoría de ${nuevaSesion.materia}. Te informaremos cuando el tutor responda.`,
+              });
+            }
+          } catch (err) {
+            console.warn('Error al insertar notificaciones de sesión:', err);
+          }
+
+          Alert.alert(
+            'Éxito',
+            'Sesión agendada correctamente',
+            [
+              {
+                text: 'OK',
+                onPress: () => navigation.goBack(),
+              },
+            ]
+          );
       }
     } catch (error) {
       console.error('Error al agendar sesión:', error);

@@ -115,7 +115,7 @@ export default function NotificacionesScreen({ navigation, route, userType = 'Tu
 
         {esReciente && (
           <View style={styles.highlightIcon}>
-            <Text style={styles.highlightIconText}>👉</Text>
+            <Text style={styles.highlightIconText}></Text>
           </View>
         )}
       </TouchableOpacity>

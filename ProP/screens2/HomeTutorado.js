@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { getSesionesByTutor, updateSesion, getUserById } from '../utils/database';
+import { getSesionesByTutor, updateSesion, getUserById, insertNotificacion } from '../utils/database';
 import CustomHeader from '../components/CustomHeader';
 
 // Home para TUTOR: acciones centradas en gestionar tutorías
@@ -126,6 +126,35 @@ export default function HomeTutorado({ navigation, currentUserId: currentUserIdP
         setPendingRequests(prev => prev.filter(s => s.id !== sesion.id));
       }
       
+      // Crear notificaciones para alumno y tutor al cambiar estado
+      try {
+        const tutor = await getUserById(currentUserId);
+        const nombreTutor = tutor?.name || 'el tutor';
+        const fechaFormateada = formatearFecha(sesion.fecha);
+
+        // Notificación para el alumno
+        await insertNotificacion({
+          usuarioId: sesion.usuarioId,
+          tipo: nuevoEstado === 'aceptada' ? 'sesion_confirmada' : 'sesion_rechazada',
+          titulo: nuevoEstado === 'aceptada' ? `Sesión Confirmada con ${nombreTutor}` : `Sesión Rechazada por ${nombreTutor}`,
+          descripcion: nuevoEstado === 'aceptada'
+            ? `Tu tutoría para ${sesion.materia} fue aceptada. Será el ${fechaFormateada} a las ${sesion.hora}`
+            : `Tu tutoría para ${sesion.materia} fue rechazada por ${nombreTutor}.`,
+        });
+
+        // Notificación para el tutor (confirmación local)
+        await insertNotificacion({
+          usuarioId: currentUserId,
+          tipo: nuevoEstado === 'aceptada' ? 'sesion_confirmada' : 'sesion_rechazada',
+          titulo: nuevoEstado === 'aceptada' ? `Aceptaste la sesión con ${sesion.nombreAlumno || 'el alumno'}` : `Rechazaste la sesión con ${sesion.nombreAlumno || 'el alumno'}`,
+          descripcion: nuevoEstado === 'aceptada'
+            ? `Has aceptado la tutoría de ${sesion.materia} con ${sesion.nombreAlumno}. La sesión será el ${fechaFormateada} a las ${sesion.hora}`
+            : `Has rechazado la tutoría de ${sesion.materia} con ${sesion.nombreAlumno}.`,
+        });
+      } catch (err) {
+        console.warn('Error al insertar notificaciones en HomeTutorado:', err);
+      }
+
       Alert.alert('Éxito', `Solicitud ${nuevoEstado === 'aceptada' ? 'aceptada' : 'rechazada'}`);
     } catch (error) {
       console.error('Error al actualizar sesión:', error);

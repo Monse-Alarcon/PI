@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import CustomHeader from '../components/CustomHeader';
-import { getSesionById, updateSesion } from '../utils/database';
+import { getSesionById, updateSesion, getUserById, insertNotificacion } from '../utils/database';
 
 export default function AgendaEditar({ route, navigation }) {
   const sesionId = route?.params?.sesionId;
@@ -49,6 +49,24 @@ export default function AgendaEditar({ route, navigation }) {
     try {
       setSaving(true);
       await updateSesion(sesionId, { estado: nuevoEstado });
+      // Notificar al alumno sobre la decisión del tutor
+      try {
+        const tutor = await getUserById(sesion.tutorId);
+        const nombreTutor = tutor?.name || 'el tutor';
+        const fechaFormateada = new Date(sesion.fecha).toLocaleDateString();
+
+        await insertNotificacion({
+          usuarioId: sesion.usuarioId,
+          tipo: nuevoEstado === 'aceptada' ? 'sesion_confirmada' : 'sesion_rechazada',
+          titulo: nuevoEstado === 'aceptada' ? `Sesión Confirmada con ${nombreTutor}` : `Sesión Rechazada por ${nombreTutor}`,
+          descripcion: nuevoEstado === 'aceptada'
+            ? `Tu tutoría para ${sesion.materia} fue aceptada. La cita será el ${fechaFormateada} a las ${sesion.hora}`
+            : `Tu tutoría para ${sesion.materia} fue rechazada por ${nombreTutor}.`,
+        });
+      } catch (err) {
+        console.warn('Error al insertar notificación desde AgendaEditar:', err);
+      }
+
       Alert.alert('Listo', `Estado actualizado a ${nuevoEstado}`);
       navigation && navigation.navigate && navigation.navigate(previous);
     } catch (err) {
