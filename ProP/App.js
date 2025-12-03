@@ -17,6 +17,7 @@ import MiAgendaScreenTutor from './screens2/MiAgendaScreen';
 import AgendaEditar from './screens2/AgendaEditar';
 import CalificacionesScreen from './screens2/CalificacionesScreen';
 import NotificacionesScreen from './screens/NotificacionesScreen';
+import NotificacionesTutoradoScreen from './screens/NotificacionesTutoradoScreen';
 import RecuperarContrasenaScreen from './screens/RecuperarContrasenaScreen';
 import TutoresScreen from './screens/TutoresScreen';
 import TutoresScreenTutor from './screens2/TutoresScreen';
@@ -325,8 +326,9 @@ export default function App() {
 
   // notificaciones
   if (currentScreen === 'notificaciones') {
+    const NotificacionesComponent = userType === 'Tutor' ? NotificacionesScreen : NotificacionesTutoradoScreen;
     return (
-      <NotificacionesScreen
+      <NotificacionesComponent
         navigation={{
           goBack: () => setCurrentScreen('home'),
           navigate: name => setCurrentScreen(String(name).toLowerCase()),
